@@ -827,12 +827,25 @@ public abstract class PhotoPage extends ActivityState implements
     }
 
     private boolean canShowBars() {
+        boolean mIsBox = false;
+
         // No bars if we are showing camera preview.
         if (mAppBridge != null && mCurrentIndex == 0
                 && !mPhotoView.getFilmMode()) return false;
 
         // No bars if it's not allowed.
         if (!mActionBarAllowed) return false;
+
+        try {
+            mIsBox = (boolean)Class.forName("android.os.SystemProperties")
+                .getMethod("getBoolean", new Class[] { String.class, Boolean.TYPE })
+                .invoke(null, new Object[] { "ro.platform.has.mbxuimode", false });
+        } catch (Exception e) {
+            Log.d(TAG,"[canShowBars]Exception e:" + e);
+        }
+
+        if (mIsBox)
+            return true;
 
         Configuration config = mActivity.getResources().getConfiguration();
         if (config.touchscreen == Configuration.TOUCHSCREEN_NOTOUCH) {
