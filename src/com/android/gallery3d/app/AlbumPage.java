@@ -26,6 +26,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
 import android.view.HapticFeedbackConstants;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -65,6 +66,7 @@ public class AlbumPage extends ActivityState implements GalleryActionBar.Cluster
     @SuppressWarnings("unused")
     private static final String TAG = "AlbumPage";
 
+    private int mFocusedId = 0;
     public static final String KEY_MEDIA_PATH = "media-path";
     public static final String KEY_PARENT_MEDIA_PATH = "parent-media-path";
     public static final String KEY_SET_CENTER = "set-center";
@@ -494,6 +496,20 @@ public class AlbumPage extends ActivityState implements GalleryActionBar.Cluster
             public void onLongTap(int slotIndex) {
                 AlbumPage.this.onLongTap(slotIndex);
             }
+
+            @Override
+            public boolean onKeyeventProcess ( KeyEvent keyEvent,  boolean requestFocus ) {
+              if ( null == keyEvent ) {
+                  mAlbumView.setPressedIndex ( requestFocus ? 0 : -1 );
+                  mFocusedId = 0;
+                  return true;
+              }
+              if ( ( mFocusedId == 0 ) && ( keyEvent.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP ) ||
+                      ( mFocusedId == mSlotView.getVisibleEnd() ) && ( keyEvent.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN ) ) {
+                  return false;
+              }
+              return findNextFocusd ( keyEvent );
+            }
         });
         mActionModeHandler = new ActionModeHandler(mActivity, mSelectionManager);
         mActionModeHandler.setActionModeListener(new ActionModeListener() {
@@ -783,4 +799,48 @@ public class AlbumPage extends ActivityState implements GalleryActionBar.Cluster
             switchToFilmstrip();
         }
     }
+
+    private boolean findNextFocusd ( KeyEvent keyEvent ) {
+        int gapCount = mActivity.getResources().getInteger ( R.integer.albumset_rows_land );
+        int allCount = mSlotView.getVisibleEnd();
+        switch ( keyEvent.getKeyCode() ) {
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                if ( ( mFocusedId - gapCount ) < mSlotView.getVisibleStart() ) {
+                    return false;
+                } else {
+                    mFocusedId -= gapCount;
+                }
+                mAlbumView.setPressedIndex ( mFocusedId );
+                break;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                if ( ( mFocusedId + gapCount ) > allCount ) {
+                    return false;
+                } else {
+                    mFocusedId += gapCount;
+                }
+                mAlbumView.setPressedIndex ( mFocusedId );
+                break;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                if ( ( mFocusedId + 1 ) > allCount ) {
+                    return false;
+                } else {
+                    mFocusedId += 1;
+                }
+                mAlbumView.setPressedIndex ( mFocusedId );
+                break;
+            case KeyEvent.KEYCODE_DPAD_UP:
+                if ( ( mFocusedId - 1 ) > allCount ) {
+                    return false;
+                } else {
+                    mFocusedId -= 1;
+                }
+                mAlbumView.setPressedIndex ( mFocusedId );
+                break;
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+                AlbumPage.this.onSingleTapUp ( mFocusedId );
+                break;
+        }
+        return true;
+    }
+
 }
