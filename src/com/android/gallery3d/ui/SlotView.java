@@ -627,7 +627,6 @@ public class SlotView extends GLView {
 
     private class MyGestureListener implements GestureDetector.OnGestureListener {
         private boolean isDown;
-
         // We call the listener's onDown() when our onShowPress() is called and
         // call the listener's onUp() when we receive any further event.
         @Override
@@ -739,6 +738,26 @@ public class SlotView extends GLView {
 
     public int getScrollY() {
         return mScrollY;
+    }
+
+    public void onKeyScroll( boolean scroll, boolean isLeft ) {
+        int visibleStart = getVisibleStart();
+        int visibleEnd = getVisibleEnd();
+        int rowsLand = mLayout.mSpec.rowsLand;
+        int slotWidth = mLayout.getSlotWidth();
+        int distance = slotWidth * ( (visibleEnd - visibleStart) / rowsLand );
+        if ( scroll && !isLeft ) {
+            mScroller.startScroll( distance, 0, mLayout.getScrollLimit() );
+        } else if ( scroll && isLeft ) {
+            mScroller.startScroll( -distance, 0, mLayout.getScrollLimit() );
+        } else if ( !scroll && isLeft ) {
+            mPaper.overScroll( -distance );
+            mPaper.onRelease();
+        } else if ( !scroll && !isLeft ) {
+            mPaper.overScroll( distance );
+            mPaper.onRelease();
+        }
+        invalidate();
     }
 
     @Override

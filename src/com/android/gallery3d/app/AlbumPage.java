@@ -805,34 +805,42 @@ public class AlbumPage extends ActivityState implements GalleryActionBar.Cluster
         int allCount = mSlotView.getVisibleEnd();
         switch ( keyEvent.getKeyCode() ) {
             case KeyEvent.KEYCODE_DPAD_LEFT:
-                if ( ( mFocusedId - gapCount ) < mSlotView.getVisibleStart() ) {
-                    return false;
-                } else {
+                if ( (mFocusedId - gapCount) >= 0 ) {
                     mFocusedId -= gapCount;
+                } else {
+                    mSlotView.onKeyScroll( false, true );
+                }
+                if ( mFocusedId < mSlotView.getVisibleStart() ) {
+                    mSlotView.onKeyScroll( true, true );
                 }
                 mAlbumView.setPressedIndex ( mFocusedId );
                 break;
             case KeyEvent.KEYCODE_DPAD_RIGHT:
-                if ( ( mFocusedId + gapCount ) > allCount ) {
-                    return false;
-                } else {
+                if ( (mFocusedId + gapCount) < mDetailsSource.size() ) {
                     mFocusedId += gapCount;
+                } else {
+                    mSlotView.onKeyScroll( false, false );
+                }
+                if ( mFocusedId >= allCount ) {
+                    mSlotView.onKeyScroll( true, false );
                 }
                 mAlbumView.setPressedIndex ( mFocusedId );
                 break;
             case KeyEvent.KEYCODE_DPAD_DOWN:
-                if ( ( mFocusedId + 1 ) > allCount ) {
-                    return false;
-                } else {
+                if ( (mFocusedId + 1) < mDetailsSource.size() ) {
                     mFocusedId += 1;
+                }
+                if ( mFocusedId >= allCount ) {
+                    mSlotView.onKeyScroll( true, false );
                 }
                 mAlbumView.setPressedIndex ( mFocusedId );
                 break;
             case KeyEvent.KEYCODE_DPAD_UP:
-                if ( ( mFocusedId - 1 ) > allCount ) {
-                    return false;
-                } else {
+                if ( (mFocusedId - 1) >= 0 ) {
                     mFocusedId -= 1;
+                }
+                if ( mFocusedId < mSlotView.getVisibleStart() ) {
+                    mSlotView.onKeyScroll( true, true );
                 }
                 mAlbumView.setPressedIndex ( mFocusedId );
                 break;
