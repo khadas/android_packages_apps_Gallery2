@@ -35,6 +35,7 @@ import com.android.gallery3d.common.ApiHelper;
 import com.android.gallery3d.common.Utils;
 import com.android.gallery3d.data.MediaItem;
 import com.android.gallery3d.data.MediaObject;
+import com.android.gallery3d.data.LocalImage;
 import com.android.gallery3d.data.Path;
 import com.android.gallery3d.glrenderer.GLCanvas;
 import com.android.gallery3d.glrenderer.RawTexture;
@@ -53,6 +54,9 @@ public class PhotoView extends GLView {
     public static final int INVALID_SIZE = -1;
     public static final long INVALID_DATA_VERSION =
             MediaObject.INVALID_DATA_VERSION;
+
+    private GifScreenNail mGifScreenNail = null;
+    private boolean mSlideShow = false;
 
     public static class Size {
         public int width;
@@ -600,6 +604,9 @@ public class PhotoView extends GLView {
         private boolean mIsDeletable;
         private int mLoadingState = Model.LOADING_INIT;
         private Size mSize = new Size();
+        private boolean mIsGif = false;
+        private String mPatch = null;
+        private MediaItem mMediaItem;
 
         @Override
         public void reload() {
@@ -614,6 +621,35 @@ public class PhotoView extends GLView {
             mLoadingState = mModel.getLoadingState(0);
             setScreenNail(mModel.getScreenNail(0));
             updateSize();
+            mMediaItem = mModel.getMediaItem(0);
+            if (mMediaItem != null) {
+                mIsGif = mMediaItem.getMimeType().equalsIgnoreCase("image/gif");
+                if (mIsGif) {
+                    if (mPatch == null) {
+                        mPatch = mMediaItem.getFilePath();
+                        mGifScreenNail = new GifScreenNail(mPatch);
+                        mGifScreenNail.Gifdecoder();
+                    } else {
+                        if (!mPatch.equals(mMediaItem.getFilePath())) {
+                           mGifScreenNail.stop();
+                           mPatch = mMediaItem.getFilePath();
+                           mGifScreenNail = new GifScreenNail(mPatch);
+                           mGifScreenNail.Gifdecoder();
+                        }
+                    }
+                    if (mSlideShow) {
+                        mPatch = mMediaItem.getFilePath();
+                        mGifScreenNail = new GifScreenNail(mPatch);
+                        mGifScreenNail.Gifdecoder();
+                        mSlideShow = false;
+                    }
+                } else {
+                    mGifScreenNail = null;
+                    mPatch = null;
+                    mIsGif = false;
+                    mSlideShow = false;
+                }
+            }
         }
 
         @Override
@@ -657,6 +693,21 @@ public class PhotoView extends GLView {
 
             if (mWantPictureCenterCallbacks && mPositionController.isCenter()) {
                 mListener.onPictureCenter(mIsCamera);
+            }
+
+            if (mIsGif) {
+                if (mMediaItem instanceof LocalImage) {
+                    ScreenNail tempSreenNail = mGifScreenNail.getNextGif();
+                    if (tempSreenNail != null) {
+                        setScreenNail(tempSreenNail);
+                    }
+                }else{
+                    ScreenNail tempSreenNail = mGifScreenNail.getNextBitmapGif();
+                    if (tempSreenNail != null) {
+                        setScreenNail(tempSreenNail);
+                    }
+                }
+                invalidate();
             }
         }
 
@@ -768,6 +819,14 @@ public class PhotoView extends GLView {
             }
             mTileView.setPosition(x, y, scale, mRotation);
         }
+    }
+
+    public void setSlideShow() {
+        mSlideShow=true;
+    }
+
+    public GifScreenNail getGifScreenNail() {
+        return mGifScreenNail;
     }
 
     private class ScreenNailPicture implements Picture {
@@ -1351,6 +1410,10 @@ public class PhotoView extends GLView {
             mPictures.get(i).setScreenNail(null);
         }
         hideUndoBar();
+        if (mGifScreenNail != null) {
+            mGifScreenNail.stop();
+            mSlideShow = true;
+        }
     }
 
     public void resume() {
