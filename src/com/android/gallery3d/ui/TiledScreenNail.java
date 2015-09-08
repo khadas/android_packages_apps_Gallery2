@@ -48,6 +48,7 @@ public class TiledScreenNail implements ScreenNail {
     private int mWidth;
     private int mHeight;
     private long mAnimationStartTime = ANIMATION_NOT_NEEDED;
+    private boolean mIsGif = false;
 
     private Bitmap mBitmap;
     private TiledTexture mTexture;
@@ -57,6 +58,14 @@ public class TiledScreenNail implements ScreenNail {
         mHeight = bitmap.getHeight();
         mBitmap = bitmap;
         mTexture = new TiledTexture(bitmap);
+    }
+
+    public TiledScreenNail(Bitmap bitmap, boolean isGif) {
+        mWidth = bitmap.getWidth();
+        mHeight = bitmap.getHeight();
+        mBitmap = bitmap;
+        mTexture = new TiledTexture(bitmap);
+        mIsGif = isGif;
     }
 
     public TiledScreenNail(int width, int height) {
@@ -153,7 +162,7 @@ public class TiledScreenNail implements ScreenNail {
 
     @Override
     public void draw(GLCanvas canvas, int x, int y, int width, int height) {
-        if (mTexture == null || !mTexture.isReady()) {
+        if (mTexture == null || (!mTexture.isReady() && !mIsGif)) {
             if (mAnimationStartTime == ANIMATION_NOT_NEEDED) {
                 mAnimationStartTime = ANIMATION_NEEDED;
             }

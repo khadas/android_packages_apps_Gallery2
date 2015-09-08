@@ -887,6 +887,9 @@ public abstract class PhotoPage extends ActivityState implements
             } else if (mTreatBackAsUp) {
                 onUpPressed();
             } else {
+                if (mPhotoView != null && mPhotoView.getGifScreenNail() != null) {
+                    mPhotoView.getGifScreenNail().stop();
+                }
                 super.onBackPressed();
             }
         }
@@ -1054,6 +1057,10 @@ public abstract class PhotoPage extends ActivityState implements
                 data.putBoolean(SlideshowPage.KEY_REPEAT, true);
                 mActivity.getStateManager().startStateForResult(
                         SlideshowPage.class, REQUEST_SLIDESHOW, data);
+                if (mPhotoView != null && mPhotoView.getGifScreenNail() != null) {
+                    mPhotoView.getGifScreenNail().stop();
+                    mPhotoView.setSlideShow();
+                }
                 return true;
             }
             case R.id.action_crop: {

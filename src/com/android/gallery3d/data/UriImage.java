@@ -295,4 +295,9 @@ public class UriImage extends MediaItem {
     public int getRotation() {
         return mRotation;
     }
+
+    @Override
+    public String getFilePath() {
+        return mUri.getPath();
+    }
 }
