@@ -14,6 +14,8 @@ LOCAL_RENDERSCRIPT_TARGET_API := 18
 LOCAL_RENDERSCRIPT_COMPATIBILITY := 18
 LOCAL_RENDERSCRIPT_FLAGS := -rs-package-name=android.support.v8.renderscript
 
+LOCAL_PRIVILEGED_MODULE := true
+
 # Keep track of previously compiled RS files too (from bundled GalleryGoogle).
 prev_compiled_rs_files := $(call all-renderscript-files-under, src)
 
