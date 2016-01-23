@@ -28,6 +28,8 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.os.storage.StorageManager;
+import android.os.storage.VolumeInfo;
 
 import com.android.gallery3d.R;
 import com.android.gallery3d.app.AbstractGalleryActivity;
@@ -43,6 +45,8 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map.Entry;
+import java.util.Collections;
+import java.util.List;
 
 public class DialogDetailsView implements DetailsViewContainer {
     @SuppressWarnings("unused")
@@ -55,10 +59,12 @@ public class DialogDetailsView implements DetailsViewContainer {
     private int mIndex;
     private Dialog mDialog;
     private CloseListener mListener;
+    private StorageManager mStorageManager;
 
     public DialogDetailsView(AbstractGalleryActivity activity, DetailsSource source) {
         mActivity = activity;
         mSource = source;
+        mStorageManager = (StorageManager)activity.getAndroidContext().getSystemService(Context.STORAGE_SERVICE);
     }
 
     @Override
@@ -129,6 +135,26 @@ public class DialogDetailsView implements DetailsViewContainer {
             mItems = new ArrayList<String>(details.size());
             mLocationIndex = -1;
             setDetails(context, details);
+        }
+
+        private String getTransPath(String inPath) {
+            String outPath = inPath;
+
+            List<VolumeInfo> volumes = mStorageManager.getVolumes();
+            Collections.sort(volumes, VolumeInfo.getDescriptionComparator());
+            for (VolumeInfo vol : volumes) {
+                if (vol != null && vol.isMountedReadable() && vol.getType() == VolumeInfo.TYPE_PUBLIC) {
+                    String pathVol = vol.getPath().getAbsolutePath();
+                    int idx = inPath.indexOf(pathVol);
+                    if (idx != -1) {
+                        int len = pathVol.length();
+                        String pathLast = inPath.substring(idx + len);
+                        outPath = mStorageManager.getBestVolumeDescription(vol) + pathLast;
+                    }
+                }
+            }
+
+            return outPath;
         }
 
         private void setDetails(Context context, MediaDetails details) {
@@ -208,7 +234,7 @@ public class DialogDetailsView implements DetailsViewContainer {
                         // as a separate section and interpret it for what it
                         // is, rather than trying to make it RTL (which messes
                         // up the path).
-                        value = "\n" + detail.getValue().toString();
+                        value = "\n" + getTransPath(detail.getValue().toString());
                         path = detail.getValue().toString();
                         break;
                     case MediaDetails.INDEX_ISO:
