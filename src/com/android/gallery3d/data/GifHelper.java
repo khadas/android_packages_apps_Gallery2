@@ -223,6 +223,9 @@ public class GifHelper {
                 for (int i = 0; i < mFrameCount; i++) {
                     int delay = getFrameDuration(i);
                     Bitmap b = getFrameBitmap(i);
+                    if (mFrames == null) {
+                        mFrames = new Vector<GifFrame>();
+                    }
                     if (delay <=0) {
                         mFrames.addElement(new GifFrame(b, 100)); // add image to frame, default set to 10fps
                     } else {
