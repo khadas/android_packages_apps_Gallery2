@@ -42,6 +42,7 @@ import com.android.gallery3d.data.Path;
 import com.android.gallery3d.picasasource.PicasaSource;
 import com.android.gallery3d.util.GalleryUtils;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 public final class GalleryActivity extends AbstractGalleryActivity implements OnCancelListener {
     public static final String EXTRA_SLIDESHOW = "slideshow";
@@ -145,6 +146,12 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
 
     @Override
     public boolean dispatchKeyEvent ( KeyEvent event ) {
+        if ( event.getKeyCode() == KeyEvent.KEYCODE_MENU ) {
+            if (event.getAction() == KeyEvent.ACTION_UP ) {
+                displayMoreMenu();
+            }
+            return false;
+        }
         if ( event.getAction() == KeyEvent.ACTION_DOWN ) {
             View cv = getWindow().getDecorView();
             int vgcId, vgbId;
@@ -168,6 +175,23 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
             }
         }
         return super.dispatchKeyEvent ( event );
+    }
+
+    private void displayMoreMenu(){
+        View mDecor = getWindow().getDecorView();
+        int vgcId, vgbId;
+        try {
+            Class docor = Class.forName ( "com.android.internal.widget.ActionBarOverlayLayout" );
+            Class c = Class.forName ( "com.android.internal.R$id" );
+            Object obj = c.newInstance();
+            Field field = c.getField ( "decor_content_parent" );
+            vgbId = field.getInt ( obj );
+            Object vgb =  mDecor.findViewById ( vgbId );
+            Method show = docor.getMethod("showOverflowMenu");
+            show.invoke(vgb);
+        } catch ( Exception e ) {
+            e.printStackTrace();
+        }
     }
 
     private void startViewAction(Intent intent) {
