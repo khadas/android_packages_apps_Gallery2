@@ -147,7 +147,15 @@ public class GLRootView extends GLSurfaceView
     }
 
     public boolean dispatchKey ( KeyEvent paramKeyEvent ) {
-        return ( mContentView.dispatchKeyEvent ( this, paramKeyEvent ) ) || ( super.dispatchKeyEvent ( paramKeyEvent ) );
+        if (!isEnabled()) return false;
+        mRenderLock.lock();
+        try {
+            // If this has been detached from root, we don't need to handle event
+            boolean handled = mContentView != null && mContentView.dispatchKeyEvent(this, paramKeyEvent);
+            return handled;
+        } finally {
+            mRenderLock.unlock();
+        }
     }
 
     @Override
