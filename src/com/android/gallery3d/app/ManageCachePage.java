@@ -24,6 +24,7 @@ import android.os.Message;
 import android.text.format.Formatter;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.FrameLayout;
@@ -86,6 +87,8 @@ public class ManageCachePage extends ActivityState implements
     private Future<Void> mUpdateStorageInfo;
     private Handler mHandler;
     private boolean mLayoutReady = false;
+
+    private int mFocusedId = 0;
 
     @Override
     protected int getBackgroundColorId() {
@@ -189,6 +192,71 @@ public class ManageCachePage extends ActivityState implements
 
         mSelectionManager.toggle(path);
         mSlotView.invalidate();
+    }
+
+    public boolean onKeyeventProcess ( KeyEvent keyEvent,  boolean requestFocus ) {
+        if ( null == keyEvent ) {
+            mSelectionDrawer.setPressedIndex ( requestFocus ? 0 : -1 );
+            mFocusedId = 0;
+            return true;
+        }
+
+        if ( ( mFocusedId == 0 ) && ( keyEvent.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP ) ||
+                ( mFocusedId == mSlotView.getVisibleEnd() ) && ( keyEvent.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN ) ) {
+            return false;
+        }
+        return findNextFocusd ( keyEvent );
+    }
+
+    private boolean findNextFocusd ( KeyEvent keyEvent ) {
+        int gapCount = mActivity.getResources().getInteger ( R.integer.albumset_rows_land );
+        int allCount = mSlotView.getVisibleEnd();
+        switch ( keyEvent.getKeyCode() ) {
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                if ( (mFocusedId - gapCount) >= 0 ) {
+                    mFocusedId -= gapCount;
+                } else {
+                    mSlotView.onKeyScroll( false, true );
+                }
+                if ( mFocusedId < mSlotView.getVisibleStart() ) {
+                    mSlotView.onKeyScroll( true, true );
+                }
+                mSelectionDrawer.setPressedIndex ( mFocusedId );
+                break;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                if ( (mFocusedId + gapCount) < mAlbumSetDataAdapter.size() ) {
+                    mFocusedId += gapCount;
+                } else {
+                    mSlotView.onKeyScroll( false, false );
+                }
+                if ( mFocusedId >= allCount ) {
+                    mSlotView.onKeyScroll( true, false );
+                }
+                mSelectionDrawer.setPressedIndex ( mFocusedId );
+                break;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                if ( (mFocusedId + 1) < mAlbumSetDataAdapter.size() ) {
+                    mFocusedId += 1;
+                }
+                if ( mFocusedId >= allCount ) {
+                    mSlotView.onKeyScroll( true, false );
+                }
+                mSelectionDrawer.setPressedIndex ( mFocusedId );
+                break;
+            case KeyEvent.KEYCODE_DPAD_UP:
+                if ( (mFocusedId - 1) >= 0 ) {
+                    mFocusedId -= 1;
+                }
+                if ( mFocusedId < mSlotView.getVisibleStart() ) {
+                    mSlotView.onKeyScroll( true, true );
+                }
+                mSelectionDrawer.setPressedIndex ( mFocusedId );
+                break;
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+                ManageCachePage.this.onSingleTapUp ( mFocusedId );
+                break;
+        }
+        return true;
     }
 
     @Override
@@ -312,7 +380,7 @@ public class ManageCachePage extends ActivityState implements
 
             @Override
             public boolean onKeyeventProcess ( KeyEvent keyEvent,  boolean requestFocus ) {
-                return true;
+                return ManageCachePage.this.onKeyeventProcess(keyEvent, requestFocus);
             }
         });
         mRootPane.addComponent(mSlotView);
@@ -421,5 +489,10 @@ public class ManageCachePage extends ActivityState implements
 
     @Override
     public void onProgressStart() {
+    }
+
+    @Override
+    public boolean onCreateActionBar(Menu menu) {
+        return false;
     }
 }
