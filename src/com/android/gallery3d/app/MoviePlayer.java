@@ -74,7 +74,7 @@ public class MoviePlayer implements
     // If we resume the acitivty with in RESUMEABLE_TIMEOUT, we will keep playing.
     // Otherwise, we pause the player.
     private static final long RESUMEABLE_TIMEOUT = 3 * 60 * 1000; // 3 mins
-
+    private static final int SEEK_INTERN = 1000;
     private Context mContext;
     private final VideoView mVideoView;
     private final View mRootView;
@@ -412,13 +412,34 @@ public class MoviePlayer implements
 
     // Below are key events passed from MovieActivity.
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-
         // Some headsets will fire off 7-10 events on a single click
         if (event.getRepeatCount() > 0) {
             return isMediaKey(keyCode);
         }
-
         switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+            case KeyEvent.KEYCODE_ENTER:
+                mController.show();
+                if (mVideoView.isPlaying()) {
+                    pauseVideo();
+                } else {
+                    playVideo();
+                }
+                break;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                mController.show();
+                mVideoPosition = mVideoView.getCurrentPosition();
+                mVideoView.seekTo(mVideoPosition+SEEK_INTERN);
+                break;
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                mController.show();
+                mVideoPosition = mVideoView.getCurrentPosition();
+                if ( mVideoPosition > SEEK_INTERN ) {
+                    mVideoView.seekTo(mVideoPosition-SEEK_INTERN);
+                } else {
+                    mVideoView.seekTo(0);
+                }
+                break;
             case KeyEvent.KEYCODE_HEADSETHOOK:
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
                 if (mVideoView.isPlaying()) {
