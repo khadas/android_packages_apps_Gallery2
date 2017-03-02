@@ -122,7 +122,13 @@ public class AlbumSetDataLoader {
     }
 
     public MediaSet getMediaSet(int index) {
-        assertIsActive(index);
+        //assertIsActive(index);
+        if (index < mActiveStart || index >= mActiveEnd) {
+            Log.e(TAG, "invalid index: " + index + "not in (" + mActiveStart +
+                    "," +  mActiveEnd + ")");
+            return null;
+        }
+
         return mData[index % mData.length];
     }
 
