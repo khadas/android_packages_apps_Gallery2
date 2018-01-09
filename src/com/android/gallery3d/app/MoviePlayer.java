@@ -76,7 +76,7 @@ public class MoviePlayer implements
     private static final long RESUMEABLE_TIMEOUT = 3 * 60 * 1000; // 3 mins
 
     private Context mContext;
-    private final VideoView mVideoView;
+    private final VideoViewMediaPlayer mVideoView;
     private final View mRootView;
     private final Bookmarker mBookmarker;
     private final Uri mUri;
@@ -120,7 +120,7 @@ public class MoviePlayer implements
             Uri videoUri, Bundle savedInstance, boolean canReplay) {
         mContext = movieActivity.getApplicationContext();
         mRootView = rootView;
-        mVideoView = (VideoView) rootView.findViewById(R.id.surface_view);
+        mVideoView = (VideoViewMediaPlayer) rootView.findViewById(R.id.surface_view);
         mBookmarker = new Bookmarker(movieActivity);
         mUri = videoUri;
 
@@ -154,6 +154,7 @@ public class MoviePlayer implements
         mVideoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
             public void onPrepared(MediaPlayer player) {
+                mVideoView.setMediaPlayer(player);
                 if (!mVideoView.canSeekForward() || !mVideoView.canSeekBackward()) {
                     mController.setSeekable(false);
                 } else {
@@ -200,6 +201,7 @@ public class MoviePlayer implements
                 startVideo();
             }
         }
+        mVideoView.setMovieActivity(movieActivity);
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
@@ -412,7 +414,6 @@ public class MoviePlayer implements
 
     // Below are key events passed from MovieActivity.
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-
         // Some headsets will fire off 7-10 events on a single click
         if (event.getRepeatCount() > 0) {
             return isMediaKey(keyCode);

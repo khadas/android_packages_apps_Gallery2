@@ -19,7 +19,7 @@
         android:background="@android:color/black"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-    <VideoView android:id="@+id/surface_view"
+    <com.android.gallery3d.app.VideoViewMediaPlayer android:id="@+id/surface_view"
             android:visibility="invisible"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
