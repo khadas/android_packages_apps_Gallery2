@@ -25,6 +25,7 @@ import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.audiofx.AudioEffect;
@@ -172,7 +173,8 @@ public class MoviePlayer implements
         mVideoView.postDelayed(new Runnable() {
             @Override
             public void run() {
-                mVideoView.setVisibility(View.VISIBLE);
+                //mVideoView.setVisibility(View.VISIBLE);
+                mVideoView.setBackgroundColor(Color.TRANSPARENT);
             }
         }, BLACK_TIMEOUT);
 

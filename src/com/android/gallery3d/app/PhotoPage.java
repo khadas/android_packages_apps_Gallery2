@@ -1355,6 +1355,9 @@ public abstract class PhotoPage extends ActivityState implements
                     .putExtra(MovieActivity.KEY_TREAT_UP_AS_BACK, true);
             intent.setClass(activity, MovieActivity.class);
             activity.startActivityForResult(intent, REQUEST_PLAY_VIDEO);
+            if (activity.isInMultiWindowMode()) {
+                activity.overridePendingTransition(0, 0);
+            }
         } catch (ActivityNotFoundException e) {
             Toast.makeText(activity, activity.getString(R.string.video_err),
                     Toast.LENGTH_SHORT).show();
