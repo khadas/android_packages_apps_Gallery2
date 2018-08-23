@@ -21,6 +21,7 @@ import android.app.Activity;
 import android.app.WallpaperManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
@@ -43,6 +44,7 @@ import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.android.gallery3d.R;
+import com.android.gallery3d.app.CheckPermissionActivity;
 import com.android.gallery3d.common.Utils;
 import com.android.gallery3d.filtershow.cache.ImageLoader;
 import com.android.gallery3d.filtershow.tools.SaveImage;
@@ -91,6 +93,7 @@ public class CropActivity extends Activity {
     private static final int DO_EXTRA_OUTPUT = 1 << 2;
 
     private static final int FLAG_CHECK = DO_SET_WALLPAPER | DO_RETURN_DATA | DO_EXTRA_OUTPUT;
+    private boolean mUnInit;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -118,6 +121,18 @@ public class CropActivity extends Activity {
                 }
             });
         }
+
+        if (CheckPermissionActivity.hasUnauthorizedPermission(this)) {
+            requestPermissions(CheckPermissionActivity.REQUEST_PERMISSIONS,
+                    CheckPermissionActivity.REQUEST_CODE_ASK_PERMISSIONS);
+            mUnInit = true;
+            return;
+        }
+        initData();
+    }
+
+    private void initData(){
+        Intent intent = getIntent();
         if (intent.getData() != null) {
             mSourceUri = intent.getData();
             startLoadBitmap(mSourceUri);
@@ -143,7 +158,9 @@ public class CropActivity extends Activity {
     @Override
     public void onConfigurationChanged (Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        mCropView.configChanged();
+        if (null != mCropView) {
+            mCropView.configChanged();
+        }
     }
 
     /**
@@ -694,5 +711,27 @@ public class CropActivity extends Activity {
         }
         RectF scaledCrop = CropMath.getScaledCropBounds(crop, photo, imageBounds);
         return scaledCrop;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case CheckPermissionActivity.REQUEST_CODE_ASK_PERMISSIONS:
+                for (int result : grantResults) {
+                    if (result != PackageManager.PERMISSION_GRANTED) {
+                        // Permission Denied
+                        String toast_text = getResources().getString(R.string.err_permission);
+                        Toast.makeText(this, toast_text, Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
+                }
+                // Permission Granted
+                mUnInit = false;
+                initData();
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
     }
 }

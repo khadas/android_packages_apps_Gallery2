@@ -436,4 +436,5 @@
     <item quantity="one" msgid="6949174783125614798">"%1$d张照片"</item>
     <item quantity="other" msgid="3813306834113858135">"%1$d张照片"</item>
   </plurals>
+  <string name="err_permission">"无权限"</string>
 </resources>

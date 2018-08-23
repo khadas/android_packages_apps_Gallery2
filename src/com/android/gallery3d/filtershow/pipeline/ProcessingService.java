@@ -17,6 +17,7 @@
 package com.android.gallery3d.filtershow.pipeline;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
@@ -66,6 +67,8 @@ public class ProcessingService extends Service {
 
     private boolean mSaving = false;
     private boolean mNeedsAlive = false;
+
+    private static final String CHANNEL_ID_GALLERY_PROCESS = "gallery2_process";
 
     public void setFiltershowActivity(FilterShowActivity filtershowActivity) {
         mFiltershowActivity = filtershowActivity;
@@ -239,7 +242,7 @@ public class ProcessingService extends Service {
         mNotifyMgr.cancelAll();
 
         mBuilder =
-                new Notification.Builder(this)
+                new Notification.Builder(this, getNotifyChannelGalleryProcessId(this))
                         .setSmallIcon(R.drawable.filtershow_button_fx)
                         .setContentTitle(getString(R.string.filtershow_notification_label))
                         .setContentText(getString(R.string.filtershow_notification_message));
@@ -323,5 +326,26 @@ public class ProcessingService extends Service {
 
     static {
         System.loadLibrary("jni_filtershow_filters");
+    }
+
+
+    private String getNotifyChannelGalleryProcessId(Context context){
+        // create android channel
+        NotificationChannel androidChannel = new NotificationChannel(CHANNEL_ID_GALLERY_PROCESS,
+                CHANNEL_ID_GALLERY_PROCESS, NotificationManager.IMPORTANCE_LOW);
+        // Sets whether notifications posted to this channel should display notification lights
+        androidChannel.enableLights(false);
+        androidChannel.enableVibration(false);
+        // Sets whether notification posted to this channel should vibrate.
+        //androidChannel.enableVibration(true);
+        // Sets the notification light color for notifications posted to this channel
+        //androidChannel.setLightColor(Color.GREEN);
+        // Sets whether notifications posted to this channel appear on the lockscreen or not
+        androidChannel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+
+        final NotificationManager nm =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        nm.createNotificationChannel(androidChannel);
+        return CHANNEL_ID_GALLERY_PROCESS;
     }
 }

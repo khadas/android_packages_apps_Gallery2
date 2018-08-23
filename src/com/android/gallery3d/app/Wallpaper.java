@@ -16,6 +16,7 @@
 
 package com.android.gallery3d.app;
 
+import android.content.pm.PackageManager;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.WallpaperManager;
@@ -26,10 +27,12 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Display;
+import android.widget.Toast;
 
 import com.android.gallery3d.common.ApiHelper;
 import com.android.gallery3d.filtershow.crop.CropActivity;
 import com.android.gallery3d.filtershow.crop.CropExtras;
+import com.android.gallery3d.R;
 
 import java.lang.IllegalArgumentException;
 
@@ -50,6 +53,7 @@ public class Wallpaper extends Activity {
 
     private int mState = STATE_INIT;
     private Uri mPickedItem;
+    private boolean mUnInit;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -57,6 +61,13 @@ public class Wallpaper extends Activity {
         if (bundle != null) {
             mState = bundle.getInt(KEY_STATE);
             mPickedItem = (Uri) bundle.getParcelable(KEY_PICKED_ITEM);
+        }
+
+        if (CheckPermissionActivity.hasUnauthorizedPermission(this)) {
+            requestPermissions(CheckPermissionActivity.REQUEST_PERMISSIONS,
+                    CheckPermissionActivity.REQUEST_CODE_ASK_PERMISSIONS);
+            mUnInit = true;
+            return;
         }
     }
 
@@ -84,6 +95,35 @@ public class Wallpaper extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (mUnInit) {
+            return;
+        }
+        initData();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case CheckPermissionActivity.REQUEST_CODE_ASK_PERMISSIONS:
+                for (int result : grantResults) {
+                    if (result != PackageManager.PERMISSION_GRANTED) {
+                        // Permission Denied
+                        String toast_text = getResources().getString(R.string.err_permission);
+                        Toast.makeText(this, toast_text, Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
+                }
+                // Permission Granted
+                mUnInit = false;
+                //initData();
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
+    private void initData() {
         Intent intent = getIntent();
         switch (mState) {
             case STATE_INIT: {

@@ -26,6 +26,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -67,6 +68,7 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.android.gallery3d.R;
+import com.android.gallery3d.app.CheckPermissionActivity;
 import com.android.gallery3d.app.PhotoPage;
 import com.android.gallery3d.data.LocalAlbum;
 import com.android.gallery3d.filtershow.cache.ImageLoader;
@@ -195,6 +197,7 @@ public class FilterShowActivity extends FragmentActivity implements OnItemClickL
     private DialogInterface mCurrentDialog = null;
     private PopupMenu mCurrentMenu = null;
     private boolean mLoadingVisible = true;
+    private boolean mUnInit;
 
     public ProcessingService getProcessingService() {
         return mBoundService;
@@ -280,7 +283,13 @@ public class FilterShowActivity extends FragmentActivity implements OnItemClickL
         }
 
         clearGalleryBitmapPool();
-        doBindService();
+        if (CheckPermissionActivity.hasUnauthorizedPermission(this)) {
+            requestPermissions(CheckPermissionActivity.REQUEST_PERMISSIONS,
+                    CheckPermissionActivity.REQUEST_CODE_ASK_PERMISSIONS);
+            mUnInit = true;
+        } else {
+            doBindService();
+        }
         getWindow().setBackgroundDrawable(new ColorDrawable(Color.GRAY));
         setContentView(R.layout.filtershow_splashscreen);
     }
@@ -900,8 +909,12 @@ public class FilterShowActivity extends FragmentActivity implements OnItemClickL
         if (mLoadBitmapTask != null) {
             mLoadBitmapTask.cancel(false);
         }
-        mUserPresetsManager.close();
-        doUnbindService();
+        if (null != mUserPresetsManager) {
+            mUserPresetsManager.close();
+        }
+        if (!mUnInit) {
+            doUnbindService();
+        }
         super.onDestroy();
     }
 
@@ -1513,5 +1526,27 @@ public class FilterShowActivity extends FragmentActivity implements OnItemClickL
                 hint.setAlpha(1);
             }
         });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case CheckPermissionActivity.REQUEST_CODE_ASK_PERMISSIONS:
+                for (int result : grantResults) {
+                    if (result != PackageManager.PERMISSION_GRANTED) {
+                        // Permission Denied
+                        String toast_text = getResources().getString(R.string.err_permission);
+                        Toast.makeText(this, toast_text, Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
+                }
+                // Permission Granted
+                mUnInit = false;
+                doBindService();
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
     }
 }

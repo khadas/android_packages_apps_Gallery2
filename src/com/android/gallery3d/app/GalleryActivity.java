@@ -21,6 +21,7 @@ import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.InputDevice;
@@ -53,6 +54,7 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
 
     private static final String TAG = "GalleryActivity";
     private Dialog mVersionCheckDialog;
+    private boolean mUnInit;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +72,13 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
         if (savedInstanceState != null) {
             getStateManager().restoreFromState(savedInstanceState);
         } else {
-            initializeByIntent();
+            if (CheckPermissionActivity.hasUnauthorizedPermission(this)) {
+                requestPermissions(CheckPermissionActivity.REQUEST_PERMISSIONS,
+                        CheckPermissionActivity.REQUEST_CODE_ASK_PERMISSIONS);
+                mUnInit = true;
+            } else {
+                initializeByIntent();
+            }
         }
     }
 
@@ -230,6 +238,10 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
 
     @Override
     protected void onResume() {
+        if (mUnInit) {
+            super.onResume();
+            return;
+        }
         Utils.assertTrue(getStateManager().getStateCount() > 0);
         super.onResume();
         if (mVersionCheckDialog != null) {
@@ -271,5 +283,31 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
             return dispatchTouchEvent(touchEvent);
         }
         return super.onGenericMotionEvent(event);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case CheckPermissionActivity.REQUEST_CODE_ASK_PERMISSIONS:
+                for (int result : grantResults) {
+                    if (result != PackageManager.PERMISSION_GRANTED) {
+                        // Permission Denied
+                        String toast_text = getResources().getString(R.string.err_permission);
+                            Toast.makeText(this, toast_text, Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
+                }
+                // Permission Granted
+                mUnInit = false;
+                initializeByIntent();
+                Utils.assertTrue(getStateManager().getStateCount() > 0);
+                if (mVersionCheckDialog != null) {
+                    mVersionCheckDialog.show();
+                }
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
     }
 }
