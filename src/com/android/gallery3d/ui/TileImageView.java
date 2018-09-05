@@ -440,12 +440,12 @@ public class TileImageView extends GLView {
                     }
                 }
             } else if (mScreenNail != null) {
-                mScreenNail.draw(canvas, mOffsetX, mOffsetY,
-                        Math.round(mImageWidth * mScale),
-                        Math.round(mImageHeight * mScale));
-                if (isScreenNailAnimating()) {
-                    invalidate();
-                }
+//                mScreenNail.draw(canvas, mOffsetX, mOffsetY,
+//                        Math.round(mImageWidth * mScale),
+//                        Math.round(mImageHeight * mScale));
+//                if (isScreenNailAnimating()) {
+//                    invalidate();
+//                }
             }
         } finally {
             if (flags != 0) canvas.restore();

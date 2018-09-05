@@ -847,10 +847,10 @@ public class PhotoView extends GLView {
             }
             int drawW = getRotated(mRotation, r.width(), r.height());
             int drawH = getRotated(mRotation, r.height(), r.width());
-            mScreenNail.draw(canvas, -drawW / 2, -drawH / 2, drawW, drawH);
-            if (isScreenNailAnimating()) {
-                invalidate();
-            }
+//            mScreenNail.draw(canvas, -drawW / 2, -drawH / 2, drawW, drawH);
+//            if (isScreenNailAnimating()) {
+//                invalidate();
+//            }
             int s = Math.min(drawW, drawH);
             if (mIsVideo) drawVideoPlayIcon(canvas, s);
             if (mLoadingState == Model.LOADING_FAIL) {
