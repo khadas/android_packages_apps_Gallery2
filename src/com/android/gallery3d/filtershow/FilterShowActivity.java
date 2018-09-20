@@ -1303,6 +1303,9 @@ public class FilterShowActivity extends FragmentActivity implements OnItemClickL
     }
 
     void resetHistory() {
+        if(mMasterImage == null){
+            return;
+        }
         HistoryManager adapter = mMasterImage.getHistory();
         adapter.reset();
         HistoryItem historyItem = adapter.getItem(0);
@@ -1411,7 +1414,9 @@ public class FilterShowActivity extends FragmentActivity implements OnItemClickL
             int bucketId = GalleryUtils.getBucketId(saveDir.getPath());
             String albumName = LocalAlbum.getLocalizedName(getResources(), bucketId, null);
             showSavingProgress(albumName);
-            mImageShow.saveImage(this, null);
+            mSelectedImageUri = SaveImage.makeAndInsertUri(this,mSelectedImageUri);
+            File newFile = SaveImage.getNewFile(this, mSelectedImageUri);
+            mImageShow.saveImage(this, newFile, true);
         } else {
             done();
         }

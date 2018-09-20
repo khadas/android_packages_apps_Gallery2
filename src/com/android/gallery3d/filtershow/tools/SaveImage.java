@@ -326,7 +326,8 @@ public class SaveImage {
     }
 
     public Uri processAndSaveImage(ImagePreset preset, boolean flatten,
-                                   int quality, float sizeFactor, boolean exit) {
+                                   int quality, float sizeFactor,
+                                   boolean exit, boolean notMoveSource) {
 
         Uri uri = null;
         if (exit) {
@@ -346,7 +347,7 @@ public class SaveImage {
         // newSourceUri is then pointing to the new location.
         // If no file is moved, newSourceUri will be the same as mSourceUri.
         Uri newSourceUri = mSourceUri;
-        if (!flatten) {
+        if (!flatten && !notMoveSource) {
             newSourceUri = moveSrcToAuxIfNeeded(mSourceUri, mDestinationFile);
         }
 
@@ -533,7 +534,7 @@ public class SaveImage {
     }
 
     public static void saveImage(ImagePreset preset, final FilterShowActivity filterShowActivity,
-            File destination) {
+            File destination, boolean notMoveSource) {
         Uri selectedImageUri = filterShowActivity.getSelectedImageUri();
         Uri sourceImageUri = MasterImage.getImage().getUri();
         boolean flatten = false;
@@ -541,7 +542,7 @@ public class SaveImage {
             flatten = true;
         }
         Intent processIntent = ProcessingService.getSaveIntent(filterShowActivity, preset,
-                destination, selectedImageUri, sourceImageUri, flatten, 90, 1f, true);
+                destination, selectedImageUri, sourceImageUri, flatten, 90, 1f, true, notMoveSource);
 
         filterShowActivity.startService(processIntent);
 

@@ -176,7 +176,9 @@ public class EditorColorBorder extends ParametricEditor  {
             c.setColorSet(mBasColors);
         }
         updateText();
-        mControl.updateUI();
+        if(null != mControl) {
+            mControl.updateUI();
+        }
         mView.invalidate();
     }
 

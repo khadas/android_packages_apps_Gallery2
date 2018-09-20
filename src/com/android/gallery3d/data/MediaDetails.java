@@ -167,4 +167,12 @@ public class MediaDetails implements Iterable<Entry<Integer, Object>> {
             details.setUnit(MediaDetails.INDEX_FOCAL_LENGTH, R.string.unit_mm);
         }
     }
+    
+    public static void setWidth(MediaDetails details, int width){
+        details.addDetail(MediaDetails.INDEX_WIDTH, width);
+    }
+    
+    public static void setHeight(MediaDetails details, int height){
+        details.addDetail(MediaDetails.INDEX_HEIGHT, height);
+    }
 }

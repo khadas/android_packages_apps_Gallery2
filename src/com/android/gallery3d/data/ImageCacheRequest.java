@@ -33,14 +33,16 @@ abstract class ImageCacheRequest implements Job<Bitmap> {
     private int mType;
     private int mTargetSize;
     private long mTimeModified;
+    private String mLocalFilePath;
 
     public ImageCacheRequest(GalleryApp application,
-            Path path, long timeModified, int type, int targetSize) {
+            Path path, long timeModified, int type, int targetSize,String localFilePath) {
         mApplication = application;
         mPath = path;
         mType = type;
         mTargetSize = targetSize;
         mTimeModified = timeModified;
+        mLocalFilePath = localFilePath;
     }
 
     private String debugTag() {
@@ -55,7 +57,7 @@ abstract class ImageCacheRequest implements Job<Bitmap> {
 
         BytesBuffer buffer = MediaItem.getBytesBufferPool().get();
         try {
-            boolean found = cacheService.getImageData(mPath, mTimeModified, mType, buffer);
+            boolean found = cacheService.getImageData(mPath,mLocalFilePath, mTimeModified, mType, buffer);
             if (jc.isCancelled()) return null;
             if (found) {
                 BitmapFactory.Options options = new BitmapFactory.Options();
@@ -94,7 +96,7 @@ abstract class ImageCacheRequest implements Job<Bitmap> {
         byte[] array = BitmapUtils.compressToBytes(bitmap);
         if (jc.isCancelled()) return null;
 
-        cacheService.putImageData(mPath, mTimeModified, mType, array);
+        cacheService.putImageData(mPath,mLocalFilePath, mTimeModified, mType, array);
         return bitmap;
     }
 

@@ -1,4 +1,5 @@
 /*
+ * $_FOR_ROCKCHIP_RBOX_$
  * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,6 +39,12 @@ import com.android.gallery3d.glrenderer.RawTexture;
 import com.android.gallery3d.ui.GLView;
 import com.android.gallery3d.ui.PreparePageFadeoutTexture;
 import com.android.gallery3d.util.GalleryUtils;
+
+//$_rbox_$_modify_$_chengmingchuan_$20140224
+//$_rbox_$_modify_$_begin
+import android.view.KeyEvent;
+//$_rbox_$_modify_$_end
+
 
 abstract public class ActivityState {
     protected static final int FLAG_HIDE_ACTION_BAR = 1;
@@ -253,6 +260,16 @@ abstract public class ActivityState {
         //       this is a workaround for a bug in system
         return true;
     }
+
+    // $_rbox_$_modify_$_chengmingchuan_$20140224
+    // $_rbox_$_modify_$_begin
+    protected boolean onKeyDown(int keyCode, KeyEvent event) {
+        return false;
+    }
+    public void makeDirty(){
+    }
+    // $_rbox_$_modify_$_end
+
 
     protected boolean onItemSelected(MenuItem item) {
         return false;

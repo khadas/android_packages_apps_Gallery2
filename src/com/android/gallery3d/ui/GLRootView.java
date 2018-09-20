@@ -60,7 +60,7 @@ import javax.microedition.khronos.opengles.GL11;
 // (2) The public methods of CameraHeadUpDisplay
 // (3) The overridden methods in GLRootView.
 public class GLRootView extends GLSurfaceView
-        implements GLSurfaceView.Renderer, GLRoot {
+        implements GLSurfaceView.Renderer, GLRoot, View.OnGenericMotionListener {
     private static final String TAG = "GLRootView";
 
     private static final boolean DEBUG_FPS = false;
@@ -120,20 +120,24 @@ public class GLRootView extends GLSurfaceView
         mFlags |= FLAG_INITIALIZED;
         setBackgroundDrawable(null);
         setEGLContextClientVersion(ApiHelper.HAS_GLES20_REQUIRED ? 2 : 1);
-        if (ApiHelper.USE_888_PIXEL_FORMAT) {
+        /*if (ApiHelper.USE_888_PIXEL_FORMAT) {
             setEGLConfigChooser(8, 8, 8, 0, 0, 0);
         } else {
             setEGLConfigChooser(5, 6, 5, 0, 0, 0);
-        }
+        }*/
+        setEGLConfigChooser(8, 8, 8, 8, 16, 0);
         setRenderer(this);
-        if (ApiHelper.USE_888_PIXEL_FORMAT) {
+        /*if (ApiHelper.USE_888_PIXEL_FORMAT) {
             getHolder().setFormat(PixelFormat.RGB_888);
         } else {
             getHolder().setFormat(PixelFormat.RGB_565);
-        }
+        }*/
+        getHolder().setFormat(PixelFormat.RGBA_8888);
 
         // Uncomment this to enable gl error check.
         // setDebugFlags(DEBUG_CHECK_GL_ERROR);
+
+        setOnGenericMotionListener(this);
     }
 
     @Override
@@ -353,7 +357,11 @@ public class GLRootView extends GLSurfaceView
 
         try {
             onDrawFrameLocked(gl);
-        } finally {
+        }
+        catch (NullPointerException e){
+            //e.printStackTrace(); 
+        }
+        finally {
             mRenderLock.unlock();
         }
 
@@ -399,11 +407,12 @@ public class GLRootView extends GLSurfaceView
 
         mRenderRequested = false;
 
-        if ((mOrientationSource != null
+        /*if ((mOrientationSource != null
                 && mDisplayRotation != mOrientationSource.getDisplayRotation())
                 || (mFlags & FLAG_NEED_LAYOUT) != 0) {
             layoutContentPane();
-        }
+        }*/
+        if ((mFlags & FLAG_NEED_LAYOUT) != 0) layoutContentPane();
 
         mCanvas.save(GLCanvas.SAVE_FLAG_ALL);
         rotateCanvas(-mCompensation);
@@ -457,9 +466,16 @@ public class GLRootView extends GLSurfaceView
     }
 
     @Override
+    public boolean onGenericMotion(View v, MotionEvent event) {
+        if (!isEnabled()) return false;
+        if(mContentView!=null)
+        mContentView.dispatchGenericMotion(v,event);
+        return false;
+    }
+
+    @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
         if (!isEnabled()) return false;
-
         int action = event.getAction();
         if (action == MotionEvent.ACTION_CANCEL
                 || action == MotionEvent.ACTION_UP) {
