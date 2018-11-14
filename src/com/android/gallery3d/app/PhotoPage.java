@@ -24,6 +24,7 @@ import android.app.ActionBar.OnMenuVisibilityListener;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.KeyguardManager;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -39,6 +40,7 @@ import android.nfc.NfcEvent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -201,6 +203,9 @@ public abstract class PhotoPage extends ActivityState implements
     public static final String PHOTOPAGE_UPDATE="photopage_view_update";
     private BroadcastReceiver mSwitchReceiver;
     private int  jumpToIndex = 0;
+    private KeyguardManager mKeyguardManager;
+    private PowerManager mPowerManager;
+    private boolean mScreenOffLastTime;
 
     private final PanoramaSupportCallback mUpdatePanoramaMenuItemsCallback = new PanoramaSupportCallback() {
         @Override
@@ -582,6 +587,9 @@ public abstract class PhotoPage extends ActivityState implements
                         }
                     }
                 });
+
+        mKeyguardManager = (KeyguardManager) mActivity.getSystemService(Context.KEYGUARD_SERVICE);
+        mPowerManager = (PowerManager) mActivity.getSystemService(Context.POWER_SERVICE);
     }
 
     @Override
@@ -1430,6 +1438,10 @@ public abstract class PhotoPage extends ActivityState implements
     @Override
     public void onPause() {
         super.onPause();
+        if (!mPowerManager.isScreenOn()){
+            Log.d(TAG, "onPause screen off");
+            mScreenOffLastTime = true;
+        }
         mIsActive = false;
         try{
             mActivity.getAndroidContext().unregisterReceiver(mSwitchReceiver);
@@ -1558,7 +1570,13 @@ public abstract class PhotoPage extends ActivityState implements
         }
 
         mRecenterCameraOnResume = true;
-        mHandler.sendEmptyMessageDelayed(MSG_UNFREEZE_GLROOT, UNFREEZE_GLROOT_TIMEOUT);
+        if (!mKeyguardManager.isKeyguardSecure() && mScreenOffLastTime) {
+            mActivity.getGLRoot().unfreeze();
+            mScreenOffLastTime = false;
+            Log.w(TAG, "onResume with screen on and not keyguard");
+        } else {
+            mHandler.sendEmptyMessageDelayed(MSG_UNFREEZE_GLROOT, UNFREEZE_GLROOT_TIMEOUT);
+        }
         IntentFilter intentFilter = new IntentFilter(PHOTOPAGE_UPDATE);
         if (mSwitchReceiver == null) {
             mSwitchReceiver = new BroadcastReceiver() {
@@ -1588,6 +1606,7 @@ public abstract class PhotoPage extends ActivityState implements
 
         // Remove all pending messages.
         mHandler.removeCallbacksAndMessages(null);
+        mScreenOffLastTime = false;
         super.onDestroy();
     }
 
