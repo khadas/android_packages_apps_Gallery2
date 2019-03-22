@@ -238,6 +238,10 @@ public class AlbumSetPage extends ActivityState implements
 
     private void pickAlbum(int slotIndex) {
         if (!mIsActive) return;
+        if (!mAlbumSetDataAdapter.isActive(slotIndex)) {
+            Log.e(TAG, "pickAlbum data adapter is not active with index " + slotIndex);
+            return;
+        }
 
         MediaSet targetSet = mAlbumSetDataAdapter.getMediaSet(slotIndex);
         if (targetSet == null) return; // Content is dirty, we shall reload soon
