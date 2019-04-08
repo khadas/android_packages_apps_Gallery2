@@ -251,7 +251,8 @@ public class LocalImage extends LocalMediaItem {
         if (BitmapUtils.isSupportedByRegionDecoder(mimeType)) {
             operation |= SUPPORT_SETAS;
         }
-        if (mimeType != null && mimeType.toLowerCase().indexOf("gif") == -1) {
+        if (mimeType != null && mimeType.toLowerCase().indexOf("gif") == -1
+                && !mimeType.endsWith("wbmp")/*image/vnd.wap.wbmp*/) {
             operation |= SUPPORT_EDIT;
         }
          operation |= SUPPORT_FULL_IMAGE;
