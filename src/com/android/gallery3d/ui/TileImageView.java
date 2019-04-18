@@ -89,6 +89,7 @@ public class TileImageView extends GLView {
     private static final int STATE_DECODE_FAIL = 0x10;
     private static final int STATE_RECYCLING = 0x20;
     private static final int STATE_RECYCLED = 0x40;
+    private enum DisplaySize{ SMALL, MEDIUM, LARGE, EXTRA_LARGE };
 
     private TileSource mModel;
     private ScreenNail mScreenNail;
@@ -165,6 +166,32 @@ public class TileImageView extends GLView {
                 context.getSystemService(Context.WINDOW_SERVICE);
         wm.getDefaultDisplay().getMetrics(metrics);
         return metrics.heightPixels > 2048 ||  metrics.widthPixels > 2048;
+    }
+
+    public static DisplaySize getDisplayResolutionType(Context context) {
+        DisplayMetrics metrics = new DisplayMetrics();
+        WindowManager wm = (WindowManager)
+                context.getSystemService(Context.WINDOW_SERVICE);
+        wm.getDefaultDisplay().getMetrics(metrics);
+        int density=metrics.heightPixels* metrics.widthPixels;
+        DisplaySize currentDpSize=DisplaySize.MEDIUM;
+        if(density>=8294400)//3840x2160, 4K
+        {
+            currentDpSize=DisplaySize.EXTRA_LARGE;
+        }
+        else if(density>=3686400)//2560 x 1440 ,2K
+        {
+            currentDpSize=DisplaySize.LARGE;
+        }
+        else if(density>=2073600)//1920x1080 ,1080p
+        {
+            currentDpSize=DisplaySize.MEDIUM;
+        }
+        else //below 1080p
+        {
+            currentDpSize=DisplaySize.SMALL;
+        }
+        return currentDpSize;
     }
     
  // jyzheng add 2012-02-27
@@ -359,12 +386,23 @@ public class TileImageView extends GLView {
         mThreadPool = context.getThreadPool();
         mTileDecoder = mThreadPool.submit(new TileDecoder());
         if (sTileSize == 0) {
-            if (isHighResolution(context.getAndroidContext())) {
-                sTileSize = 512 ;
-            } else {
-                sTileSize = 256;
-            }
+            DisplaySize ds=getDisplayResolutionType(context.getAndroidContext());
+            switch(ds){
+              case EXTRA_LARGE:
+                    sTileSize=4096;
+                    break;
+              case LARGE:
+                    sTileSize=2048;
+                    break;
+              case MEDIUM:
+                    sTileSize=1024;
+                    break;
+              case SMALL:
+                    sTileSize=512;
+                    break;
+                    }
         }
+            Log.d(TAG,"TileImageView sTileSize="+sTileSize);
     }
     
     PhotoView mPhotoView = null;
