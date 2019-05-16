@@ -16,6 +16,7 @@
 
 package com.android.gallery3d.app;
 
+import android.app.ActivityManager;
 import android.app.Dialog;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
@@ -257,7 +258,19 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
             super.onResume();
             return;
         }
-        Utils.assertTrue(getStateManager().getStateCount() > 0);
+        try {
+            Utils.assertTrue(getStateManager().getStateCount() > 0);
+        } catch (AssertionError e) {
+            if (ActivityManager.isUserAMonkey()) {
+                super.onResume();
+                mVersionCheckDialog = null;
+                Log.v(TAG, "jump AssertionError during monkey with onResume");
+                finish();
+                return;
+            } else {
+                throw new AssertionError();
+            }
+        }
         super.onResume();
         if (mVersionCheckDialog != null) {
             mVersionCheckDialog.show();
@@ -300,7 +313,14 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
              ((GLRootView)root).setFocusable(false);
          }
             return flag||super.onKeyDown(keyCode, event);
-        } finally {    
+        } catch (AssertionError e){
+            if (ActivityManager.isUserAMonkey()) {
+                Log.v(TAG, "jump AssertionError during monkey with onKeyDown");
+            } else {
+                throw new AssertionError();
+            }
+            return super.onKeyDown(keyCode, event);
+        } finally {
             root.unlockRenderThread();
        }
     }
