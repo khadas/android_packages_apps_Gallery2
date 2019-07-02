@@ -278,6 +278,7 @@ public class LocalAlbum extends MediaSet {
         try {
             while (cursor.moveToNext()) {
                 String filepath = cursor.getString(8);
+                filepath = DataManager.convertStorageToMnt(filepath);
                 java.io.File file = new java.io.File(filepath);
                 try{
                     if(file.exists()){

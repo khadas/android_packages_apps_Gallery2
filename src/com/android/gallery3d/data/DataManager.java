@@ -256,10 +256,16 @@ public class DataManager implements StitchingChangeListener {
 
     public void delete(Path path) {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1) {
-            String deletePath = getMediaObject(path).getDetails().getDetail(MediaDetails.INDEX_PATH).toString().replaceFirst(STORAGE_REGEX,MNT_PATH);
-            File file = new File(deletePath);
-            if (file.exists()) {
-                file.delete();
+            MediaDetails mediaDetails = getMediaObject(path).getDetails();
+            if (null != mediaDetails) {
+                Object deleteDetail = mediaDetails.getDetail(MediaDetails.INDEX_PATH);
+                if (null != deleteDetail && isExtendStorage(deleteDetail.toString())) {
+                    String deletePath = convertStorageToMnt(deleteDetail.toString());
+                    File file = new File(deletePath);
+                    if (file.exists()) {
+                        file.delete();
+                    }
+                }
             }
         }
         getMediaObject(path).delete();
@@ -379,5 +385,18 @@ public class DataManager implements StitchingChangeListener {
     @Override
     public void onStitchingProgress(Uri uri, int progress) {
         // Do nothing.
+    }
+
+    public static String convertStorageToMnt(String path) {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1
+            && isExtendStorage(path)) {
+            return path.replaceFirst(STORAGE_REGEX, MNT_PATH);
+        }
+        return path;
+    }
+
+    private static boolean isExtendStorage(String path) {
+        return null != path && path.startsWith("/storage/")
+                && !path.startsWith("/storage/emulated/");
     }
 }

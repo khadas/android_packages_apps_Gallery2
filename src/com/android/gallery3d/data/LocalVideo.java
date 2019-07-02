@@ -195,7 +195,7 @@ public class LocalVideo extends LocalMediaItem {
         Uri baseUri = Video.Media.EXTERNAL_CONTENT_URI;
         mApplication.getContentResolver().delete(baseUri, "_id=?",
                 new String[]{String.valueOf(id)});
-        File file = new File(filePath);
+        File file = new File(DataManager.convertStorageToMnt(filePath));
         try{
            if(file.exists()){
                file.delete();

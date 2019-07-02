@@ -284,7 +284,7 @@ public class LocalImage extends LocalMediaItem {
         SaveImage.deleteAuxFiles(contentResolver, getContentUri());
         contentResolver.delete(baseUri, "_id=?",
                 new String[]{String.valueOf(id)});
-        File file = new File(filePath);
+        File file = new File(DataManager.convertStorageToMnt(filePath));
         try{
            if(file.exists()){
               file.delete();
