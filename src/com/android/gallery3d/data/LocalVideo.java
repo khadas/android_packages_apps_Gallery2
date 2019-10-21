@@ -20,16 +20,20 @@ import android.content.ContentResolver;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapRegionDecoder;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.provider.MediaStore.Video;
 import android.provider.MediaStore.Video.VideoColumns;
 
 import com.android.gallery3d.app.GalleryApp;
 import com.android.gallery3d.common.BitmapUtils;
+import com.android.gallery3d.data.MediaItem.BitmapInfo;
 import com.android.gallery3d.util.GalleryUtils;
 import com.android.gallery3d.util.ThreadPool.Job;
 import com.android.gallery3d.util.ThreadPool.JobContext;
 import com.android.gallery3d.util.UpdateHelper;
+
+import java.io.File;
 
 // LocalVideo represents a video in the local storage.
 public class LocalVideo extends LocalMediaItem {
@@ -162,7 +166,7 @@ public class LocalVideo extends LocalMediaItem {
         LocalVideoRequest(GalleryApp application, Path path, long timeModified,
                 int type, String localFilePath) {
             super(application, path, timeModified, type,
-                    MediaItem.getTargetSize(type));
+                    MediaItem.getTargetSize(type),localFilePath);
             mLocalFilePath = localFilePath;
         }
 
@@ -191,6 +195,14 @@ public class LocalVideo extends LocalMediaItem {
         Uri baseUri = Video.Media.EXTERNAL_CONTENT_URI;
         mApplication.getContentResolver().delete(baseUri, "_id=?",
                 new String[]{String.valueOf(id)});
+        File file = new File(DataManager.convertStorageToMnt(filePath));
+        try{
+           if(file.exists()){
+               file.delete();
+           }
+        }catch(Exception e){
+           e.printStackTrace();
+        }
     }
 
     @Override
@@ -222,6 +234,21 @@ public class LocalVideo extends LocalMediaItem {
             details.addDetail(MediaDetails.INDEX_DURATION, GalleryUtils.formatDuration(
                     mApplication.getAndroidContext(), durationInSec));
         }
+        if (filePath != null) {
+            MediaMetadataRetriever retrieverSrc = new MediaMetadataRetriever();
+            retrieverSrc.setDataSource(filePath);
+            String degreesString = retrieverSrc.extractMetadata(
+                    MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+            if (degreesString != null) {
+                int degrees = Integer.parseInt(degreesString);
+                if (degrees >= 0) {
+                    int w = degrees % 180 == 0 ? getWidth() : getHeight();
+                    int h = degrees % 180 == 0 ? getHeight() : getWidth();
+                    details.addDetail(MediaDetails.INDEX_WIDTH, w);
+                    details.addDetail(MediaDetails.INDEX_HEIGHT, h);
+                }
+            }
+        }
         return details;
     }
 
@@ -238,5 +265,11 @@ public class LocalVideo extends LocalMediaItem {
     @Override
     public String getFilePath() {
         return filePath;
+    }
+    
+    @Override
+    public Job<BitmapInfo> requestDecodeImage(int type, Uri mUri) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

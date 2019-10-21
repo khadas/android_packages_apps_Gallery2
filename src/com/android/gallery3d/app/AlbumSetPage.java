@@ -1,4 +1,5 @@
 /*
+ *$_FOR_ROCKCHIP_RBOX_$ 
  * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -62,6 +63,12 @@ import com.android.gallery3d.util.HelpUtils;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
+//$_rbox_$_modify_$_chengmingchuan_$20140224
+//$_rbox_$_modify_$_begin
+import android.view.KeyEvent;
+//$_rbox_$_modify_$_end
+
+
 public class AlbumSetPage extends ActivityState implements
         SelectionManager.SelectionListener, GalleryActionBar.ClusterRunner,
         EyePosition.EyePositionListener, MediaSet.SyncListener {
@@ -118,6 +125,17 @@ public class AlbumSetPage extends ActivityState implements
 
     private Button mCameraButton;
     private boolean mShowedEmptyToastForSelf = false;
+
+    //$_rbox_$_modify_$_chengmingchuan_$20140224
+    //$_rbox_$_modify_$_begin
+     private final int  FOCUS_UP=1;
+     private final int  FOCUS_DOWN=2;
+     private final int  FOCUS_LEFT = 3;
+     private final int  FOCUS_RIGHT = 4;
+     private int mCurrentFocus=0;
+     private int mOldFocusIndex = 0;
+     //$_rbox_$_modify_$_end
+
 
     @Override
     protected int getBackgroundColorId() {
@@ -188,7 +206,7 @@ public class AlbumSetPage extends ActivityState implements
     }
 
     public void onSingleTapUp(int slotIndex) {
-        if (!mIsActive) return;
+        if (!mIsActive || !mAlbumSetDataAdapter.isActive(slotIndex)) return;
 
         if (mSelectionManager.inSelectionMode()) {
             MediaSet targetSet = mAlbumSetDataAdapter.getMediaSet(slotIndex);
@@ -235,7 +253,7 @@ public class AlbumSetPage extends ActivityState implements
     }
 
     private void pickAlbum(int slotIndex) {
-        if (!mIsActive) return;
+        if (!mIsActive || !mAlbumSetDataAdapter.isActive(slotIndex)) return;
 
         MediaSet targetSet = mAlbumSetDataAdapter.getMediaSet(slotIndex);
         if (targetSet == null) return; // Content is dirty, we shall reload soon
@@ -298,7 +316,9 @@ public class AlbumSetPage extends ActivityState implements
     }
 
     public void onLongTap(int slotIndex) {
-        if (mGetContent || mGetAlbum) return;
+        if (mGetContent || mGetAlbum
+                || !mIsActive || !mAlbumSetDataAdapter.isActive(slotIndex))
+            return;
         MediaSet set = mAlbumSetDataAdapter.getMediaSet(slotIndex);
         if (set == null) return;
         mSelectionManager.setAutoLeaveSelectionMode(true);
@@ -573,6 +593,88 @@ public class AlbumSetPage extends ActivityState implements
         return true;
     }
 
+      //$_rbox_$_modify_$_chengmingchuan_$20140224
+      //$_rbox_$_modify_$_begin
+      private boolean moveFocus(int focus){
+         int oldFucus = mCurrentFocus;
+         switch(focus){
+            case FOCUS_UP:
+                mCurrentFocus--;
+                break;
+            case FOCUS_DOWN:
+                mCurrentFocus++;
+                break;
+            case FOCUS_LEFT:
+                mCurrentFocus -= 2;
+                break;
+            case FOCUS_RIGHT:
+                mCurrentFocus += 2;
+                break;
+            default:
+                return false;
+         }
+         if(!mAlbumSetDataAdapter.isActive(mCurrentFocus)){
+            mCurrentFocus=oldFucus;
+         }
+
+         if(mAlbumSetDataAdapter.isActive(mCurrentFocus)){
+            MediaSet set = mAlbumSetDataAdapter.getMediaSet(mCurrentFocus);
+            Path path = (set == null) ? null : set.getPath();
+            mAlbumSetView.setHighlightItemPath(path);
+            mAlbumSetView.setPressedIndex(mCurrentFocus);
+            mSlotView.setCenterIndex(mCurrentFocus);
+            mSlotView.invalidate();
+         }
+      
+         return true;
+      }
+      //$_rbox_$_modify_$_end
+      
+      //$_rbox_$_modify_$_chengmingchuan_$20140224
+      //$_rbox_$_modify_$_begin
+      private boolean gotoAlbum(){
+            int slotIndex = mCurrentFocus;
+        onSingleTapUp(slotIndex);
+       return true;
+      }
+      //$_rbox_$_modify_$_end
+    
+     //$_rbox_$_modify_$_chengmingchuan_$20140224
+     //$_rbox_$_modify_$_begin
+      @Override
+      public void makeDirty(){
+          this.mAlbumSetDataAdapter.makeDirty();
+      }
+      //$_rbox_$_modify_$_end
+    
+      //$_rbox_$_modify_$_chengmingchuan_$20140224
+      //$_rbox_$_modify_$_begin
+      @Override
+      protected boolean onKeyDown(int keyCode, KeyEvent event) {
+          /*cancel slotview heightlight*/
+           mAlbumSetView.setHighlightItemPath(null);
+       mAlbumSetView.setPressedUp();
+       Log.d(TAG, "=========================================KeyCode="+ keyCode);
+       switch(keyCode){
+          case KeyEvent.KEYCODE_DPAD_LEFT:
+              return this.moveFocus(FOCUS_LEFT);
+          case KeyEvent.KEYCODE_DPAD_RIGHT:
+              return this.moveFocus(FOCUS_RIGHT);
+          case KeyEvent.KEYCODE_DPAD_UP:
+              return this.moveFocus(FOCUS_UP);
+          case KeyEvent.KEYCODE_DPAD_DOWN:
+              return this.moveFocus(FOCUS_DOWN);
+          case KeyEvent.KEYCODE_DPAD_CENTER:      
+          case KeyEvent.KEYCODE_ENTER:
+              return this.gotoAlbum(); 
+          default:
+              break;
+          }    
+          return false;
+    }
+    //$_rbox_$_modify_$_end
+
+
     @Override
     protected boolean onItemSelected(MenuItem item) {
         Activity activity = mActivity;
@@ -752,6 +854,7 @@ public class AlbumSetPage extends ActivityState implements
 
         @Override
         public MediaDetails getDetails() {
+            if (!mAlbumSetDataAdapter.isActive(mIndex)) return null;
             MediaObject item = mAlbumSetDataAdapter.getMediaSet(mIndex);
             if (item != null) {
                 mAlbumSetView.setHighlightItemPath(item.getPath());

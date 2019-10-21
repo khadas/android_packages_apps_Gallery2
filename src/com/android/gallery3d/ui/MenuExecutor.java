@@ -27,6 +27,7 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import androidx.print.PrintHelper;
+import android.util.ConfigUtil;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -42,6 +43,7 @@ import com.android.gallery3d.util.Future;
 import com.android.gallery3d.util.GalleryUtils;
 import com.android.gallery3d.util.ThreadPool.Job;
 import com.android.gallery3d.util.ThreadPool.JobContext;
+import com.android.gallery3d.app.PhotoPage;
 
 import java.util.ArrayList;
 
@@ -110,6 +112,16 @@ public class MenuExecutor {
                             listener.onProgressComplete(message.arg1);
                         }
                         mSelectionManager.leaveSelectionMode();
+                        if (message.arg2 == R.id.action_delete
+                                && !(mActivity.getStateManager().getTopState() instanceof PhotoPage)) {
+                                mActivity.getStateManager().pause();
+                                mActivity.getStateManager().resume();
+                        }
+                        if(message.arg2 == R.id.action_delete && mActivity.getStateManager().getTopState() 
+                                instanceof PhotoPage){
+                            Intent intent = new Intent(PhotoPage.PHOTOPAGE_UPDATE);
+                            mActivity.getAndroidContext().sendBroadcast(intent);
+                        }
                         break;
                     }
                     case MSG_TASK_UPDATE: {
@@ -161,8 +173,8 @@ public class MenuExecutor {
         mHandler.sendMessage(mHandler.obtainMessage(MSG_TASK_START, listener));
     }
 
-    private void onProgressComplete(int result, ProgressListener listener) {
-        mHandler.sendMessage(mHandler.obtainMessage(MSG_TASK_COMPLETE, result, 0, listener));
+    private void onProgressComplete(int result, ProgressListener listener,int mOperation) {
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_TASK_COMPLETE, result, mOperation, listener));
     }
 
     public static void updateMenuOperation(Menu menu, int supported) {
@@ -184,8 +196,8 @@ public class MenuExecutor {
         setMenuItemVisible(menu, R.id.action_rotate_ccw, supportRotate);
         setMenuItemVisible(menu, R.id.action_rotate_cw, supportRotate);
         setMenuItemVisible(menu, R.id.action_crop, supportCrop);
-        setMenuItemVisible(menu, R.id.action_trim, supportTrim);
-        setMenuItemVisible(menu, R.id.action_mute, supportMute);
+        setMenuItemVisible(menu, R.id.action_trim, supportTrim && ConfigUtil.SUPPORT_VIDEO_TRIM);
+        setMenuItemVisible(menu, R.id.action_mute, supportMute && ConfigUtil.SUPPORT_VIDEO_MUTE);
         // Hide panorama until call to updateMenuForPanorama corrects it
         setMenuItemVisible(menu, R.id.action_share_panorama, false);
         setMenuItemVisible(menu, R.id.action_share, supportShare);
@@ -443,7 +455,7 @@ public class MenuExecutor {
                 Log.e(TAG, "failed to execute operation " + mOperation
                         + " : " + th);
             } finally {
-               onProgressComplete(result, mListener);
+               onProgressComplete(result, mListener,mOperation);
             }
             return null;
         }

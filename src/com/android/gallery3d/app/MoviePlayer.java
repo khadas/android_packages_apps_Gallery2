@@ -25,6 +25,7 @@ import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.audiofx.AudioEffect;
@@ -171,7 +172,8 @@ public class MoviePlayer implements
         mVideoView.postDelayed(new Runnable() {
             @Override
             public void run() {
-                mVideoView.setVisibility(View.VISIBLE);
+                //mVideoView.setVisibility(View.VISIBLE);
+                mVideoView.setBackgroundColor(Color.TRANSPARENT);
             }
         }, BLACK_TIMEOUT);
 
@@ -421,6 +423,7 @@ public class MoviePlayer implements
         switch (keyCode) {
             case KeyEvent.KEYCODE_HEADSETHOOK:
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+            case KeyEvent.KEYCODE_DPAD_CENTER:
                 if (mVideoView.isPlaying()) {
                     pauseVideo();
                 } else {
@@ -441,6 +444,34 @@ public class MoviePlayer implements
             case KeyEvent.KEYCODE_MEDIA_NEXT:
                 // TODO: Handle next / previous accordingly, for now we're
                 // just consuming the events.
+                return true;
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                if (mVideoView.canSeekBackward()) {
+                    pauseVideo();
+                    mController.setSeekable(true);
+                    int currentTime = mVideoView.getCurrentPosition() - 5000;
+                    currentTime = currentTime > 0 ? currentTime : 0;
+                    int totalTime = mVideoView.getDuration();
+                    mVideoView.seekTo(currentTime);
+                    setProgress();
+                } else 
+                    mController.setSeekable(false);
+                return true;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                if (mVideoView.canSeekForward()) {
+                    pauseVideo();
+                    mController.setSeekable(true);
+                    int currentTime = mVideoView.getCurrentPosition() + 5000;
+                    int totalTime = mVideoView.getDuration();
+                    currentTime = currentTime > totalTime ? totalTime : currentTime;
+                    mVideoView.seekTo(currentTime);
+                    setProgress();
+                } else 
+                    mController.setSeekable(false);
+                return true;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+            case KeyEvent.KEYCODE_DPAD_UP:
+                mController.show();
                 return true;
         }
         return false;

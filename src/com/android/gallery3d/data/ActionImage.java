@@ -24,6 +24,7 @@ import android.net.Uri;
 import com.android.gallery3d.app.GalleryApp;
 import com.android.gallery3d.common.BitmapUtils;
 import com.android.gallery3d.common.Utils;
+import com.android.gallery3d.data.MediaItem.BitmapInfo;
 import com.android.gallery3d.util.ThreadPool.Job;
 import com.android.gallery3d.util.ThreadPool.JobContext;
 
@@ -99,5 +100,11 @@ public class ActionImage extends MediaItem {
     @Override
     public int getHeight() {
         return 0;
+    }
+    
+    @Override
+    public Job<BitmapInfo> requestDecodeImage(int type, Uri mUri) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

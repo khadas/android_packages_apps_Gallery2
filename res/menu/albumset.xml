@@ -29,7 +29,7 @@
             android:showAsAction="never" />
     <item android:id="@+id/action_settings"
             android:title="@string/settings"
-            android:showAsAction="never" />
+            android:showAsAction="never" android:visible="false"/>
     <item android:id="@+id/action_general_help"
             android:title="@string/help"
             android:visible="false"

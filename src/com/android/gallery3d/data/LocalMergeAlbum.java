@@ -200,6 +200,14 @@ public class LocalMergeAlbum extends MediaSet implements ContentListener {
     public void delete() {
         for (MediaSet set : mSources) {
             set.delete();
+            java.io.File file = new java.io.File(set.mPath.toString());
+            try{
+               if(file.exists()){
+                   file.delete();
+               }
+            }catch(Exception e){
+               e.printStackTrace();
+            }
         }
     }
 

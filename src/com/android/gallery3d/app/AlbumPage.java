@@ -1,4 +1,5 @@
 /*
+ *$_FOR_ROCKCHIP_RBOX_$
  * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -59,6 +60,12 @@ import com.android.gallery3d.util.Future;
 import com.android.gallery3d.util.GalleryUtils;
 import com.android.gallery3d.util.MediaSetUtils;
 
+// $_rbox_$_modify_$_chengmingchuan_$20140224
+// $_rbox_$_modify_$_begin
+import android.view.KeyEvent;
+// $_rbox_$_modify_$_end
+
+
 
 public class AlbumPage extends ActivityState implements GalleryActionBar.ClusterRunner,
         SelectionManager.SelectionListener, MediaSet.SyncListener, GalleryActionBar.OnAlbumModeSelectedListener {
@@ -115,6 +122,18 @@ public class AlbumPage extends ActivityState implements GalleryActionBar.Cluster
 
     private Handler mHandler;
     private static final int MSG_PICK_PHOTO = 0;
+
+    //$_rbox_$_modify_$_chengmingchuan_$20140224
+    //$_rbox_$_modify_$_begin
+    private final int  FOCUS_UP=1;
+    private final int  FOCUS_DOWN=2;
+    private final int  FOCUS_LEFT = 3;
+    private final int  FOCUS_RIGHT = 4;
+    private int mCurrentFocus=0;
+
+    private int mOldFocusIndex = 0;
+    //$_rbox_$_modify_$_end
+
 
     private PhotoFallbackEffect mResumeEffect;
     private PhotoFallbackEffect.PositionProvider mPositionProvider =
@@ -583,6 +602,82 @@ public class AlbumPage extends ActivityState implements GalleryActionBar.Cluster
             pickPhoto(targetPhoto, true);
         }
     }
+
+    //$_rbox_$_modify_$_chengmingchuan_$20140224
+    //$_rbox_$_modify_$_begin
+    private boolean moveFocus(int focus){
+        int oldFucus = mCurrentFocus;
+        switch(focus){
+            case FOCUS_UP:
+                mCurrentFocus--;
+                break;
+            case FOCUS_DOWN:
+                mCurrentFocus++;
+                break;
+            case FOCUS_LEFT:
+                mCurrentFocus -= 2;
+                break;
+            case FOCUS_RIGHT:
+                mCurrentFocus += 2;
+                break;
+            default:
+                return false;
+        }
+        if (!mAlbumDataAdapter.isActive(mCurrentFocus)) {
+            mCurrentFocus=oldFucus;
+        }
+        if (mAlbumDataAdapter.isActive(mCurrentFocus)) {
+            MediaItem item = mAlbumDataAdapter.get(mCurrentFocus);
+            Path path = (item == null) ? null : item.getPath();
+            mAlbumView.setHighlightItemPath(path);
+            mAlbumView.setPressedIndex(mCurrentFocus);
+            mSlotView.setCenterIndex(mCurrentFocus);
+            mSlotView.invalidate();
+        }
+        return true;
+    }
+    //$_rbox_$_modify_$_end
+
+    //$_rbox_$_modify_$_chengmingchuan_$20140224
+    //$_rbox_$_modify_$_begin
+    private boolean gotoPhotoPage(){
+        int slotIndex = mCurrentFocus;
+        if(!mAlbumDataAdapter.isActive(slotIndex)){
+            return false;
+        }
+
+        this.onSingleTapUp(slotIndex);
+        return true;
+    }
+    //$_rbox_$_modify_$_end
+
+    //$_rbox_$_modify_$_chengmingchuan_$20140224
+    //$_rbox_$_modify_$_begin
+    @Override
+    protected boolean onKeyDown(int keyCode, KeyEvent event) {
+        /*cancel slotview heightlight*/
+        mAlbumView.setHighlightItemPath(null);
+        mAlbumView.setPressedUp();
+        Log.d(TAG, "=========================================KeyCode="+ keyCode);
+        switch(keyCode){
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                return this.moveFocus(FOCUS_LEFT);
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                return this.moveFocus(FOCUS_RIGHT);
+            case KeyEvent.KEYCODE_DPAD_UP:
+                return this.moveFocus(FOCUS_UP);
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                return this.moveFocus(FOCUS_DOWN);
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+            case KeyEvent.KEYCODE_ENTER:
+                return this.gotoPhotoPage();
+            default:
+                break;
+        }
+        return false;
+    }
+    //$_rbox_$_modify_$_end
+
 
     @Override
     protected boolean onItemSelected(MenuItem item) {

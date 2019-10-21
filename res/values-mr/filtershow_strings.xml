@@ -17,7 +17,7 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="title_activity_filter_show" msgid="2036539130684382763">"फोटो संपादक"</string>
-    <string name="cannot_load_image" msgid="5023634941212959976">"इमेज लोड करु शकत नाही!"</string>
+    <string name="cannot_load_image" msgid="5023634941212959976">"प्रतिमा लोड करु शकत नाही!"</string>
     <string name="cannot_edit_original" msgid="5890293845882609388">"मूळ संपादित करू शकत नाही"</string>
     <!-- no translation found for original_picture_text (3076213290079909698) -->
     <skip />
@@ -129,14 +129,14 @@
     <string name="draw_size_accept" msgid="6781529716526190028">"ठीक आहे"</string>
     <string name="state_panel_original" msgid="9069584409934164419">"मूळ"</string>
     <string name="state_panel_result" msgid="318640531123298676">"परिणाम"</string>
-    <string name="filtershow_notification_label" msgid="1653168445525855247">"इमेज सेव्ह करत आहे"</string>
+    <string name="filtershow_notification_label" msgid="1653168445525855247">"प्रतिमा जतन करीत आहे"</string>
     <string name="filtershow_notification_message" msgid="2661871765484036286">"प्रक्रिया करत आहे..."</string>
-    <string name="filtershow_save_preset" msgid="3933550455577927439">"वर्तमान प्रीसेट सेव्ह करा"</string>
+    <string name="filtershow_save_preset" msgid="3933550455577927439">"वर्तमान प्रीसेट जतन करा"</string>
     <string name="filtershow_manage_preset" msgid="3872896753708921286">"वापरकर्ता प्रीसेट व्यवस्थापित करा"</string>
     <string name="filtershow_new_preset" msgid="8923930134923416617">"नवीन प्रीसेट"</string>
     <string name="filtershow_preset_name" msgid="7015939727047649866">"प्रीसेट नाव"</string>
     <string name="filtershow_show_info_panel" msgid="5773036746043711115">"माहिती"</string>
-    <string name="filtershow_show_info_panel_name" msgid="5908258517140549439">"इमेज नाव"</string>
+    <string name="filtershow_show_info_panel_name" msgid="5908258517140549439">"प्रतिमा नाव"</string>
     <string name="filtershow_show_info_panel_size" msgid="1714666849204493017">"प्र‍तिमा आकार"</string>
     <string name="filtershow_show_info_panel_histogram" msgid="2669188469897955809">"हिस्टोग्राम"</string>
     <string name="filtershow_show_info_panel_exif" msgid="4965486882625125154">"EXIF डेटा"</string>

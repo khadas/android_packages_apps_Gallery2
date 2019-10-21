@@ -19,6 +19,7 @@ package com.android.gallery3d.data;
 import android.content.Context;
 import android.database.ContentObserver;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 
 import com.android.gallery3d.app.GalleryApp;
@@ -29,6 +30,7 @@ import com.android.gallery3d.data.MediaSet.ItemConsumer;
 import com.android.gallery3d.data.MediaSource.PathId;
 import com.android.gallery3d.picasasource.PicasaSource;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -85,6 +87,9 @@ public class DataManager implements StitchingChangeListener {
     private static final String TOP_LOCAL_IMAGE_SET_PATH = "/local/image";
 
     private static final String TOP_LOCAL_VIDEO_SET_PATH = "/local/video";
+
+    private static final String MNT_PATH = "/mnt/media_rw";
+    private static final String STORAGE_REGEX = "^/storage";
 
     public static final Comparator<MediaItem> sDateTakenComparator =
             new DateTakenComparator();
@@ -250,6 +255,19 @@ public class DataManager implements StitchingChangeListener {
     }
 
     public void delete(Path path) {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1) {
+            MediaDetails mediaDetails = getMediaObject(path).getDetails();
+            if (null != mediaDetails) {
+                Object deleteDetail = mediaDetails.getDetail(MediaDetails.INDEX_PATH);
+                if (null != deleteDetail && isExtendStorage(deleteDetail.toString())) {
+                    String deletePath = convertStorageToMnt(deleteDetail.toString());
+                    File file = new File(deletePath);
+                    if (file.exists()) {
+                        file.delete();
+                    }
+                }
+            }
+        }
         getMediaObject(path).delete();
     }
 
@@ -367,5 +385,18 @@ public class DataManager implements StitchingChangeListener {
     @Override
     public void onStitchingProgress(Uri uri, int progress) {
         // Do nothing.
+    }
+
+    public static String convertStorageToMnt(String path) {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1
+            && isExtendStorage(path)) {
+            return path.replaceFirst(STORAGE_REGEX, MNT_PATH);
+        }
+        return path;
+    }
+
+    private static boolean isExtendStorage(String path) {
+        return null != path && path.startsWith("/storage/")
+                && !path.startsWith("/storage/emulated/");
     }
 }

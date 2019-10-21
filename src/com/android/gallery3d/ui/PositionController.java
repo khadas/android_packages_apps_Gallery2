@@ -1,4 +1,5 @@
 /*
+ * $_FOR_ROCKCHIP_RBOX_$
  * Copyright (C) 2011 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1183,6 +1184,14 @@ class PositionController {
     ////////////////////////////////////////////////////////////////////////////
     //  Public utilities
     ////////////////////////////////////////////////////////////////////////////
+
+    //$_rbox_$_modify_$_chengmingchuan_$_20121212_$_[Info: Handle Keycode]
+    // $_rbox_$_modify_$_begin
+     public float getCurrentScale() {
+        Box b = mBoxes.get(0);
+        return b.mCurrentScale;
+    }
+    // $_rbox_$_modify_$_end
 
     public boolean isAtMinimalScale() {
         Box b = mBoxes.get(0);

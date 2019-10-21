@@ -16,28 +16,34 @@
 
 package com.android.gallery3d.gadget;
 
+import java.util.ArrayList;
+
 import android.annotation.TargetApi;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.database.ContentObserver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Handler;
 import android.util.Log;
 import android.widget.RemoteViews;
-
+import android.content.IntentFilter;
 import com.android.gallery3d.R;
 import com.android.gallery3d.common.ApiHelper;
 import com.android.gallery3d.gadget.WidgetDatabaseHelper.Entry;
 import com.android.gallery3d.onetimeinitializer.GalleryWidgetMigrator;
+import com.android.gallery3d.util.LinkedNode.List;
 
 public class PhotoAppWidgetProvider extends AppWidgetProvider {
 
     private static final String TAG = "WidgetProvider";
 
-    static RemoteViews buildWidget(Context context, int id, Entry entry) {
+    public static RemoteViews buildWidget(Context context, int id, Entry entry) {
 
         switch (entry.type) {
             case WidgetDatabaseHelper.TYPE_ALBUM:
@@ -48,7 +54,9 @@ public class PhotoAppWidgetProvider extends AppWidgetProvider {
         }
         throw new RuntimeException("invalid type - " + entry.type);
     }
-
+    
+    private static ArrayList<Integer> appWidgetIdList = new ArrayList<Integer>();
+    
     @Override
     public void onUpdate(Context context,
             AppWidgetManager appWidgetManager, int[] appWidgetIds) {
@@ -61,6 +69,7 @@ public class PhotoAppWidgetProvider extends AppWidgetProvider {
         WidgetDatabaseHelper helper = new WidgetDatabaseHelper(context);
         try {
             for (int id : appWidgetIds) {
+                appWidgetIdList.add(id);
                 Entry entry = helper.getEntry(id);
                 if (entry != null) {
                     RemoteViews views = buildWidget(context, id, entry);
@@ -135,5 +144,26 @@ public class PhotoAppWidgetProvider extends AppWidgetProvider {
             helper.deleteEntry(appWidgetId);
         }
         helper.close();
+    }
+
+    @Override
+    public void onReceive(Context context, Intent intent) {     
+        if(intent.getAction().equals("widget_update")){
+            // migrate gallery widgets from pre-JB releases to JB due to bucket ID change
+            GalleryWidgetMigrator.migrateGalleryWidgets(context);
+
+            WidgetDatabaseHelper helper = new WidgetDatabaseHelper(context);
+                for (int i = 0;i < appWidgetIdList.size();i++) {
+                    int id = appWidgetIdList.get(i);
+                    Entry entry = helper.getEntry(id);
+                    if (entry != null) {
+                        RemoteViews views = buildWidget(context, id, entry);
+                        AppWidgetManager.getInstance(context).updateAppWidget(id, views);
+                    } else {
+                        Log.e(TAG, "cannot load widget: " + id);
+                    }
+                }
+        }
+        super.onReceive(context, intent);
     }
 }

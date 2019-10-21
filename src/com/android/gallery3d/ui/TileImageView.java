@@ -16,26 +16,43 @@
 
 package com.android.gallery3d.ui;
 
+import android.content.ContentUris;
 import android.content.Context;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import androidx.collection.LongSparseArray;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Message;
+import android.provider.MediaStore;
+import android.provider.MediaStore.Images.ImageColumns;
 import android.util.DisplayMetrics;
 import android.view.WindowManager;
 
 import com.android.gallery3d.app.GalleryContext;
+import com.android.gallery3d.app.Log;
+import com.android.gallery3d.app.PhotoPage;
 import com.android.gallery3d.common.Utils;
 import com.android.gallery3d.data.DecodeUtils;
+import com.android.gallery3d.data.MediaItem;
 import com.android.photos.data.GalleryBitmapPool;
+import com.android.gallery3d.glrenderer.BitmapTexture;
 import com.android.gallery3d.glrenderer.GLCanvas;
 import com.android.gallery3d.glrenderer.UploadedTexture;
 import com.android.gallery3d.util.Future;
+import com.android.gallery3d.util.FutureListener;
 import com.android.gallery3d.util.ThreadPool;
 import com.android.gallery3d.util.ThreadPool.CancelListener;
 import com.android.gallery3d.util.ThreadPool.JobContext;
+import com.android.gallery3d.data.MediaItem.BitmapInfo;
+import com.android.gif.GifTextrue;
+import com.android.gif.GifTextrueFactory;
 
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TileImageView extends GLView {
@@ -72,6 +89,7 @@ public class TileImageView extends GLView {
     private static final int STATE_DECODE_FAIL = 0x10;
     private static final int STATE_RECYCLING = 0x20;
     private static final int STATE_RECYCLED = 0x40;
+    private enum DisplaySize{ SMALL, MEDIUM, LARGE, EXTRA_LARGE };
 
     private TileSource mModel;
     private ScreenNail mScreenNail;
@@ -150,16 +168,246 @@ public class TileImageView extends GLView {
         return metrics.heightPixels > 2048 ||  metrics.widthPixels > 2048;
     }
 
+    public static DisplaySize getDisplayResolutionType(Context context) {
+        DisplayMetrics metrics = new DisplayMetrics();
+        WindowManager wm = (WindowManager)
+                context.getSystemService(Context.WINDOW_SERVICE);
+        wm.getDefaultDisplay().getMetrics(metrics);
+        int density=metrics.heightPixels* metrics.widthPixels;
+        DisplaySize currentDpSize=DisplaySize.MEDIUM;
+        if(density>=8294400)//3840x2160, 4K
+        {
+            currentDpSize=DisplaySize.EXTRA_LARGE;
+        }
+        else if(density>=3686400)//2560 x 1440 ,2K
+        {
+            currentDpSize=DisplaySize.LARGE;
+        }
+        else if(density>=2073600)//1920x1080 ,1080p
+        {
+            currentDpSize=DisplaySize.MEDIUM;
+        }
+        else //below 1080p
+        {
+            currentDpSize=DisplaySize.SMALL;
+        }
+        return currentDpSize;
+    }
+    
+ // jyzheng add 2012-02-27
+    public Context mContext = null;
+    private boolean isGifPic = false;
+    private boolean isReload = false;
+    private String filePath = null;
+    public Uri mUri = null;
+    private Object obj = new Object();
+    private Future<?> mTask;
+    private boolean isBMPPic = false;
+    private BitmapScreenNail mBitmapScreenNail = null;
+
+    public void setGifPic(boolean isGifPic) {
+        synchronized (obj) {
+            this.isGifPic = isGifPic;
+            mUri = null;
+            filePath = null;
+        }   
+    }
+    
+    public static Uri getTrueUri(Context context,Uri mUri){
+        if(mUri == null || mUri.getPath() == null){
+            return mUri;
+        }
+        if(mUri.toString().startsWith("file://")){
+            Uri uri = MediaStore.Images.Media.getContentUri("external");
+            Cursor cur = context.getContentResolver().query(uri, null, null, null, null);
+            String path = mUri.getPath();
+            if(cur.moveToFirst()){
+                while(!cur.isAfterLast()){
+                    if(cur.getString(cur.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)).equals(path)){
+                        Uri result = ContentUris.withAppendedId(uri,cur.getInt(cur.getColumnIndexOrThrow(MediaStore.Images.Media._ID)));
+                        cur.close();
+                        cur = null;
+                        return result;
+                    }else{ 
+                        cur.moveToNext();
+                    }
+                }
+            }
+            if(cur != null){
+                cur.close();
+                cur = null;
+            }
+        }       
+        return mUri;    
+    }
+
+    public void isGifStream(boolean mFilmMode) {
+        synchronized (obj) {
+            if(!(mModel instanceof PhotoPage.Model)){
+                return;
+            }
+            MediaItem item = ((PhotoPage.Model) mModel).getCurrentMediaItem();
+            if(item == null){
+                isReload = true;
+                return;
+            }
+            Uri uri = null;
+            String mimeType = item.getMimeType();
+            try{
+                uri = getTrueUri(mContext, item.getContentUri());
+            }catch (Exception e) {
+                return;
+            }
+            mUri = uri;
+            String str = uri != null ? uri.toString():null;
+            boolean isGif = mimeType.toLowerCase().endsWith("gif");
+//              if(!isGif && isChangeFilmMode){
+//                  return;
+//              }else{
+                mDecodeUri = null;
+                isGifPic = false;
+                isBMPPic = false;
+                isReload = false;
+//              }
+            if (isGif) {
+                InputStream is = null;
+                boolean flag = false;
+                if(!mFilmMode){
+                    is = getInputStream(mContext, str);
+                    flag = GifTextrue.isGifStream(is);
+                }
+                if(flag){
+                    isGifPic = true;
+                    Cursor c = mContext.getContentResolver().query(uri,
+                            new String[] { ImageColumns.DATA }, null, null, null);
+                    if (c != null) {
+                        c.moveToFirst();
+                        filePath = c.getString(0);
+                        if(filePath == null){
+                            isGifPic = false;
+                            return;
+                        }
+                        GifTextrueFactory.startOnly(new GifTextrue(this, null,
+                                filePath));
+                        c.close();
+                        c = null;
+                    }else{
+                        if(filePath == null){
+                            String temp = uri.toString();
+                            if(temp != null && temp.startsWith("file://")){
+                                filePath = temp.substring(7);
+                            }else{
+                                isGifPic = false;
+                                return;
+                            }
+                        }
+                    }
+                }else{
+                    GifTextrueFactory.freezeAllGif();
+                    isGifPic = false;
+                }
+            } else {
+                if(!mFilmMode && mimeType != null && mimeType.startsWith("image/")
+                        && mimeType.endsWith("bmp")){
+                    if(mTask != null){
+                        mTask.cancel();
+                    }
+                    isBMPPic = true;
+                    mTask = mThreadPool.submit(
+                        item.requestDecodeImage(MediaItem.TYPE_DECODE,mUri),
+                          mListener);
+                }else{
+                    isBMPPic = false;
+                }
+            }
+        }
+    }
+    
+    private static final int MSG_UPDATE_IMAGE = 1;
+    private FutureListener<BitmapInfo> mListener = new FutureListener<BitmapInfo>() {
+        public void onFutureDone(Future<BitmapInfo> future) {
+            mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_IMAGE,
+                    future));
+        }
+    };
+    
+    private Handler mHandler = new Handler() {
+          public void handleMessage(Message message) {
+              onDecodeComplete((Future<BitmapInfo>) message.obj);
+          }
+      };
+      
+      private Uri mDecodeUri = null;
+      private void onDecodeComplete(Future<BitmapInfo> future) {
+          try {
+            if(future == null || future.get() == null){
+                return;
+            }           
+            if(future.get().getmUri() != mUri){
+                return;
+            }
+            mDecodeUri = future.get().getmUri();
+              Bitmap backup = future.get().getmBitmap();
+              if(mBitmapScreenNail != null){
+                mBitmapScreenNail.recycle();
+                mBitmapScreenNail = null;
+              }
+              if(backup == null){
+                return;
+              }
+              
+              mBitmapScreenNail = new BitmapScreenNail(backup);
+              notifyModelInvalidated();
+          } catch (Throwable t) {
+              Log.w(TAG, "fail to decode thumb", t);
+          }
+      }
+
+    public void decodePhoto() {
+
+    }
+
+    private static InputStream getInputStream(Context c, String uri) {
+        if (uri == null) {
+            return null;
+        }
+        try {
+            return c.getContentResolver().openInputStream(Uri.parse(uri));
+        } catch (FileNotFoundException e) {
+
+            e.printStackTrace();
+            return null;
+        }
+
+    }
+
     public TileImageView(GalleryContext context) {
+        mContext = context.getAndroidContext();
         mThreadPool = context.getThreadPool();
         mTileDecoder = mThreadPool.submit(new TileDecoder());
         if (sTileSize == 0) {
-            if (isHighResolution(context.getAndroidContext())) {
-                sTileSize = 512 ;
-            } else {
-                sTileSize = 256;
-            }
+            DisplaySize ds=getDisplayResolutionType(context.getAndroidContext());
+            switch(ds){
+              case EXTRA_LARGE:
+                    sTileSize=4096;
+                    break;
+              case LARGE:
+                    sTileSize=2048;
+                    break;
+              case MEDIUM:
+                    sTileSize=1024;
+                    break;
+              case SMALL:
+                    sTileSize=512;
+                    break;
+                    }
         }
+            Log.d(TAG,"TileImageView sTileSize="+sTileSize);
+    }
+    
+    PhotoView mPhotoView = null;
+    public void setPhoteView(PhotoView photoView){
+        mPhotoView = photoView;
     }
 
     public void setModel(TileSource model) {
@@ -252,6 +500,9 @@ public class TileImageView extends GLView {
             int n = mActiveTiles.size();
             for (int i = 0; i < n; i++) {
                 Tile tile = mActiveTiles.valueAt(i);
+                if(tile == null){
+                    continue;
+                }
                 int level = tile.mTileLevel;
                 if (level < fromLevel || level >= endLevel
                         || !range[level - fromLevel].contains(tile.mX, tile.mY)) {
@@ -375,7 +626,9 @@ public class TileImageView extends GLView {
         int n = mActiveTiles.size();
         for (int i = 0; i < n; i++) {
             Tile texture = mActiveTiles.valueAt(i);
-            texture.recycle();
+            if(texture != null){
+                texture.recycle();
+            }
         }
         mActiveTiles.clear();
         mTileRange.set(0, 0, 0, 0);
@@ -390,6 +643,7 @@ public class TileImageView extends GLView {
             }
         }
         setScreenNail(null);
+        GifTextrueFactory.freezeAllGif();
     }
 
     public void prepareTextures() {
@@ -405,6 +659,14 @@ public class TileImageView extends GLView {
 
     @Override
     protected void render(GLCanvas canvas) {
+        if(isReload && ((PhotoPage.Model) mModel).getCurrentMediaItem() != null){
+            if(mPhotoView != null){
+                isGifStream(mPhotoView.getFilmMode());
+            }else{
+                isGifStream(true);
+            }
+            isReload = false;
+        }
         mUploadQuota = UPLOAD_LIMIT;
         mRenderComplete = true;
 
@@ -422,23 +684,42 @@ public class TileImageView extends GLView {
                 canvas.translate(-centerX, -centerY);
             }
         }
-        try {
-            if (level != mLevelCount && !isScreenNailAnimating()) {
-                if (mScreenNail != null) {
-                    mScreenNail.noDraw();
-                }
-
-                int size = (sTileSize << level);
-                float length = size * mScale;
-                Rect r = mTileRange;
-
-                for (int ty = r.top, i = 0; ty < r.bottom; ty += size, i++) {
-                    float y = mOffsetY + i * length;
-                    for (int tx = r.left, j = 0; tx < r.right; tx += size, j++) {
-                        float x = mOffsetX + j * length;
-                        drawTile(canvas, tx, ty, level, x, y, length);
+        if (isGifPic) {
+            if (GifTextrueFactory.getGifTextrue() != null) {
+                BitmapTexture bitmapTexture = GifTextrueFactory.getGifTextrue()
+                        .getBitmapTexture();
+                if (bitmapTexture != null) {
+                    bitmapTexture.draw(canvas, mOffsetX, mOffsetY, Math
+                            .round(mImageWidth * mScale), Math
+                            .round(mImageHeight * mScale));
+                    if(bitmapTexture.mBitmap != null){
+                       bitmapTexture.mBitmap.recycle();
+                       bitmapTexture.mBitmap= null;
+                    }
+                    bitmapTexture = null;
+                } else if (mScreenNail != null) {
+                    mScreenNail.draw(canvas, mOffsetX, mOffsetY,
+                            Math.round(mImageWidth * mScale),
+                            Math.round(mImageHeight * mScale));
+                    if (isScreenNailAnimating()) {
+                        invalidate();
                     }
                 }
+            }else{
+                if(filePath == null){
+                    isGifPic = false;
+                    return;
+                }
+                GifTextrueFactory.startOnly(new GifTextrue(this, null,
+                        filePath));
+            }
+            if (rotation != 0)
+                canvas.restore();
+        } else if(isBMPPic){
+            if(mBitmapScreenNail != null && mDecodeUri != null && mDecodeUri == mUri){
+                mBitmapScreenNail.draw(canvas, mOffsetX, mOffsetY,
+                        Math.round(mImageWidth * mScale),
+                        Math.round(mImageHeight * mScale));
             } else if (mScreenNail != null) {
                 mScreenNail.draw(canvas, mOffsetX, mOffsetY,
                         Math.round(mImageWidth * mScale),
@@ -447,8 +728,36 @@ public class TileImageView extends GLView {
                     invalidate();
                 }
             }
-        } finally {
-            if (flags != 0) canvas.restore();
+        }else{
+            try {
+                if (level != mLevelCount && !isScreenNailAnimating()) {
+                    if (mScreenNail != null) {
+                        mScreenNail.noDraw();
+                    }
+
+                    int size = (sTileSize << level);
+                    float length = size * mScale;
+                    Rect r = mTileRange;
+
+                    for (int ty = r.top, i = 0; ty < r.bottom; ty += size, i++) {
+                        float y = mOffsetY + i * length;
+                        for (int tx = r.left, j = 0; tx < r.right; tx += size, j++) {
+                            float x = mOffsetX + j * length;
+                            drawTile(canvas, tx, ty, level, x, y, length);
+                        }
+                    }
+                } else if (mScreenNail != null) {
+                    mScreenNail.draw(canvas, mOffsetX, mOffsetY,
+                            Math.round(mImageWidth * mScale),
+                            Math.round(mImageHeight * mScale));
+                    if (isScreenNailAnimating()) {
+                        invalidate();
+                    }
+                }
+            } finally {
+                if (flags != 0)
+                    canvas.restore();
+            }
         }
 
         if (mRenderComplete) {
@@ -468,7 +777,7 @@ public class TileImageView extends GLView {
         int n = mActiveTiles.size();
         for (int i = 0; i < n; i++) {
             Tile tile = mActiveTiles.valueAt(i);
-            if (!tile.isContentValid()) queueForDecode(tile);
+            if (tile != null && !tile.isContentValid()) queueForDecode(tile);
         }
     }
 
@@ -520,6 +829,9 @@ public class TileImageView extends GLView {
     }
 
     synchronized void recycleTile(Tile tile) {
+        if(tile == null){
+            return;
+        }
         if (tile.mTileState == STATE_DECODING) {
             tile.mTileState = STATE_RECYCLING;
             return;
@@ -573,7 +885,7 @@ public class TileImageView extends GLView {
                 if (tile == null) break;
                 if (!tile.isContentValid()) {
                     boolean hasBeenLoaded = tile.isLoaded();
-                    Utils.assertTrue(tile.mTileState == STATE_DECODED);
+//                    Utils.assertTrue(tile.mTileState == STATE_DECODED);
                     tile.updateContent(canvas);
                     if (!hasBeenLoaded) tile.draw(canvas, 0, 0);
                     --quota;
@@ -682,7 +994,7 @@ public class TileImageView extends GLView {
 
         @Override
         protected Bitmap onGetBitmap() {
-            Utils.assertTrue(mTileState == STATE_DECODED);
+            //Utils.assertTrue(mTileState == STATE_DECODED);
 
             // We need to override the width and height, so that we won't
             // draw beyond the boundaries.

@@ -43,6 +43,8 @@ LOCAL_JAVA_LIBRARIES += org.apache.http.legacy
 
 LOCAL_JARJAR_RULES := $(LOCAL_PATH)/jarjar-rules.txt
 
+LOCAL_CERTIFICATE := platform
+
 include $(BUILD_PACKAGE)
 
 ifeq ($(strip $(LOCAL_PACKAGE_OVERRIDES)),)
