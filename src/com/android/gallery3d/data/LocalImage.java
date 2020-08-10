@@ -51,6 +51,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import android.util.DisplayMetrics;
+import android.view.WindowManager;
 
 // LocalImage represents an image in the local storage.
 public class LocalImage extends LocalMediaItem {
@@ -195,8 +197,9 @@ public class LocalImage extends LocalMediaItem {
         @Override
         public Bitmap onDecodeOriginal(JobContext jc, final int type) {
             if(type == MediaItem.TYPE_DECODE){
+                DisplayMetrics dm = mApplication.getResources().getDisplayMetrics();
                   return new com.android.gallery3d.util.BitmapUtils(mApplication.getAndroidContext())
-                    .getBitmap(getContentUri(), 1024, 768);
+                    .getBitmap(getContentUri(), dm.widthPixels, dm.heightPixels);
             }
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
@@ -406,8 +409,9 @@ public class LocalImage extends LocalMediaItem {
 
         @Override
         public BitmapInfo run(JobContext jc) {
+            DisplayMetrics dm = mApplication.getResources().getDisplayMetrics();
             return new BitmapInfo(mUri,
-                    new com.android.gallery3d.util.BitmapUtils(mApplication.getAndroidContext()).getNotRotateBitmap(mUri, 1024, 768));
+                    new com.android.gallery3d.util.BitmapUtils(mApplication.getAndroidContext()).getNotRotateBitmap(mUri, dm.widthPixels, dm.heightPixels));
         }
     }
 }
