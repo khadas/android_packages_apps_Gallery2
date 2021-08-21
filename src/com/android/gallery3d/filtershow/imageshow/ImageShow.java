@@ -601,9 +601,12 @@ public class ImageShow extends View implements OnGestureListener,
     }
 
     public void saveImage(FilterShowActivity filterShowActivity, File file) {
-        SaveImage.saveImage(getImagePreset(), filterShowActivity, file);
+        saveImage(filterShowActivity, file, false);
     }
 
+    public void saveImage(FilterShowActivity filterShowActivity, File file, boolean notMoveSource){
+        SaveImage.saveImage(getImagePreset(), filterShowActivity, file, notMoveSource);
+    }
 
     public boolean scaleInProgress() {
         return mScaleGestureDetector.isInProgress();

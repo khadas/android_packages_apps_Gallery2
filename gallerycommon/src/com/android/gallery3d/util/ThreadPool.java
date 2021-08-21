@@ -130,7 +130,9 @@ public class ThreadPool {
             // if the job is cancelled.
             if (setMode(MODE_CPU)) {
                 try {
-                    result = mJob.run(this);
+                    if(mJob != null) {
+                        result = mJob.run(this);
+                    }
                 } catch (Throwable ex) {
                     Log.w(TAG, "Exception in running a job", ex);
                 }

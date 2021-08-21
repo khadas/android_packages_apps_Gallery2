@@ -129,6 +129,14 @@ public class FilterTypeSet extends MediaSet implements ContentListener {
             public void consume(int index, MediaItem item) {
                 if ((item.getSupportedOperations() & SUPPORT_DELETE) != 0) {
                     item.delete();
+                    java.io.File file = new java.io.File(item.mPath.toString());
+                    try{
+                       if(file.exists()){
+                           file.delete();
+                       }
+                    }catch(Exception e){
+                        e.printStackTrace();
+                    }
                 }
             }
         };

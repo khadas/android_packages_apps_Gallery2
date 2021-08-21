@@ -27,10 +27,47 @@ import android.view.Window;
 import com.android.gallery3d.R;
 import com.android.gallery3d.ui.GLRootView;
 
+// $_rbox_$_modify_$_chengmingchuan_$20140225
+// $_rbox_$_modify_$_begin
+import android.view.KeyEvent;
+import android.os.Environment;
+import com.android.gallery3d.ui.GLRoot;
+import android.content.Context;
+// $_rbox_$_modify_$_end
+
+
 public class PickerActivity extends AbstractGalleryActivity
         implements OnClickListener {
 
     public static final String KEY_ALBUM_PATH = "album-path";
+
+    // $_rbox_$_modify_$_chengmingchuan_$_20140225_$_[Info: Handle Keycode]
+    // $_rbox_$_modify_$_begin
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+         if(KeyEvent.KEYCODE_BACK==keyCode){
+         this.onBackPressed();
+         return true;
+     }
+
+     GLRoot root = getGLRoot();
+        root.lockRenderThread();
+        try {
+         boolean flag = getStateManager().onKeyDown(keyCode, event);
+         if(flag){
+          ((GLRootView)root).setFocusable(true);
+          ((GLRootView)root).requestFocus();
+         }else{
+             ((GLRootView)root).setFocusable(false);
+         }
+            return flag||super.onKeyDown(keyCode, event);
+        } finally {    
+            root.unlockRenderThread();
+       }
+    }
+    // $_rbox_$_modify_$_end
+
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

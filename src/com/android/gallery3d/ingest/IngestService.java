@@ -23,6 +23,8 @@ import com.android.gallery3d.ingest.data.MtpClient;
 import com.android.gallery3d.ingest.data.MtpDeviceIndex;
 
 import android.annotation.TargetApi;
+import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -79,13 +81,14 @@ public class IngestService extends Service implements ImportTask.Listener,
   private NotificationCompat.Builder mNotificationBuilder;
   private long mLastProgressIndexTime = 0;
   private boolean mNeedRelaunchNotification = false;
+  private static final String CHANNEL_ID_GALLERY_INGEST = "gallery2_ingest";
 
   @Override
   public void onCreate() {
     super.onCreate();
     mScannerClient = new ScannerClient(this);
     mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-    mNotificationBuilder = new NotificationCompat.Builder(this);
+    mNotificationBuilder = new NotificationCompat.Builder(this, getNotifyChannelGalleryProcessId(this));
     // TODO(georgescu): Use a better drawable for the notificaton?
     mNotificationBuilder.setSmallIcon(android.R.drawable.stat_notify_sync)
         .setContentIntent(PendingIntent.getActivity(this, 0,
@@ -330,5 +333,25 @@ public class IngestService extends Service implements ImportTask.Listener,
     @Override
     public void onScanCompleted(String path, Uri uri) {
     }
+  }
+
+  private String getNotifyChannelGalleryProcessId(Context context){
+    // create android channel
+    NotificationChannel androidChannel = new NotificationChannel(CHANNEL_ID_GALLERY_INGEST,
+            CHANNEL_ID_GALLERY_INGEST, NotificationManager.IMPORTANCE_LOW);
+    // Sets whether notifications posted to this channel should display notification lights
+    androidChannel.enableLights(false);
+    androidChannel.enableVibration(false);
+    // Sets whether notification posted to this channel should vibrate.
+    //androidChannel.enableVibration(true);
+    // Sets the notification light color for notifications posted to this channel
+    //androidChannel.setLightColor(Color.GREEN);
+    // Sets whether notifications posted to this channel appear on the lockscreen or not
+    androidChannel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+
+    final NotificationManager nm =
+            (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+    nm.createNotificationChannel(androidChannel);
+    return CHANNEL_ID_GALLERY_INGEST;
   }
 }

@@ -1,4 +1,5 @@
 /*
+ * $_FOR_ROCKCHIP_RBOX_$
  * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -101,6 +102,13 @@ public class AlbumSetDataLoader {
             }
         };
     }
+
+    //$_rbox_$_modify_$_chengmingchuan_$20140224
+    //$_rbox_$_modify_$_begin
+    public void makeDirty(){
+        mReloadTask.notifyDirty();
+    }
+    //$_rbox_$_modify_$_end
 
     public void pause() {
         mReloadTask.terminate();

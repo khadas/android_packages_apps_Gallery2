@@ -1,4 +1,5 @@
 /*
+ * $_FOR_ROCKCHIP_RBOX_$
  * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +30,12 @@ import com.android.gallery3d.common.Utils;
 import com.android.gallery3d.util.UsageStatistics;
 
 import java.util.Stack;
+
+//$_rbox_$_modify_$_chengmingchuan_$_20140224_$_[Info: Handle Keycode]
+//$_rbox_$_modify_$_begin
+import android.view.KeyEvent;
+//$_rbox_$_modify_$_end
+
 
 public class StateManager {
     @SuppressWarnings("unused")
@@ -143,6 +150,14 @@ public class StateManager {
         return mStack.size();
     }
 
+     //$_rbox_$_modify_$_chengmingchuan_$_20140224_$_[Info: Handle Keycode]
+    // $_rbox_$_modify_$_begin
+     public boolean onKeyDown(int keyCode, KeyEvent event) {
+         return getTopState().onKeyDown(keyCode, event);
+     }
+     // $_rbox_$_modify_$_end
+
+
     public boolean itemSelected(MenuItem item) {
         if (!mStack.isEmpty()) {
             if (getTopState().onItemSelected(item)) return true;
@@ -191,35 +206,33 @@ public class StateManager {
 
         Log.v(TAG, "finishState " + state);
         if (state != mStack.peek().activityState) {
-            if (state.isDestroyed()) {
+        //    if (state.isDestroyed()) {
                 Log.d(TAG, "The state is already destroyed");
                 return;
-            } else {
+          /*  } else {
                 throw new IllegalArgumentException("The stateview to be finished"
                         + " is not at the top of the stack: " + state + ", "
                         + mStack.peek().activityState);
-            }
+            }*/
         }
 
         // Remove the top state.
         mStack.pop();
         state.mIsFinishing = true;
-        ActivityState top = !mStack.isEmpty() ? mStack.peek().activityState : null;
-        if (mIsResumed && fireOnPause) {
-            if (top != null) {
-                state.transitionOnNextPause(state.getClass(), top.getClass(),
-                        StateTransitionAnimation.Transition.Outgoing);
-            }
-            state.onPause();
-        }
+        if (mIsResumed) state.onPause();
         mActivity.getGLRoot().setContentPane(null);
         state.onDestroy();
 
-        if (top != null && mIsResumed) top.resume();
-        if (top != null) {
-            UsageStatistics.onContentViewChanged(UsageStatistics.COMPONENT_GALLERY,
+        if (!mStack.isEmpty()) {
+            // Restore the immediately previous state
+            ActivityState top = mStack.peek().activityState;
+            if (mIsResumed) top.resume();
+            if (top != null) {
+                UsageStatistics.onContentViewChanged(UsageStatistics.COMPONENT_GALLERY,
                     top.getClass().getSimpleName());
+            }
         }
+        
     }
 
     public void switchState(ActivityState oldState,
@@ -257,6 +270,8 @@ public class StateManager {
 
     public void destroy() {
         Log.v(TAG, "destroy");
+        Intent intent = new Intent("widget_update");
+        mActivity.getAndroidContext().sendBroadcast(intent);
         while (!mStack.isEmpty()) {
             mStack.pop().activityState.onDestroy();
         }
@@ -297,6 +312,8 @@ public class StateManager {
     public void saveState(Bundle outState) {
         Log.v(TAG, "saveState");
 
+        Intent intent = new Intent("widget_update");
+        mActivity.getAndroidContext().sendBroadcast(intent);
         Parcelable list[] = new Parcelable[mStack.size()];
         int i = 0;
         for (StateEntry entry : mStack) {

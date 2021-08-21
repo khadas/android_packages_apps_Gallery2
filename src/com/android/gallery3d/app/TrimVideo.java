@@ -39,6 +39,7 @@ import com.android.gallery3d.util.SaveVideoFileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import android.os.Message;
 
 public class TrimVideo extends Activity implements
         MediaPlayer.OnErrorListener,
@@ -225,6 +226,26 @@ public class TrimVideo extends Activity implements
             return true;
         }
     }
+    
+    private final static int MSG = 0x01;
+    private Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+            case MSG:
+                if (mProgress != null) {
+                    mProgress.dismiss();
+                    mProgress = null;
+                }
+                Toast.makeText(getApplicationContext(),
+                        getString(R.string.movie_crop_alert) ,
+                        Toast.LENGTH_LONG)
+                        .show();
+                finish();
+                break;
+            }
+        }   
+    };
 
     private void trimVideo() {
 
@@ -240,12 +261,15 @@ public class TrimVideo extends Activity implements
                 try {
                     VideoUtils.startTrim(mSrcFile, mDstFileInfo.mFile,
                             mTrimStartTime, mTrimEndTime);
-                    // Update the database for adding a new video file.
-                    SaveVideoFileUtils.insertContent(mDstFileInfo,
-                            getContentResolver(), mUri);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
+                    handler.removeMessages(MSG);
+                    handler.sendEmptyMessage(MSG);
+                    return;
                 }
+                    // Update the database for adding a new video file.
+                SaveVideoFileUtils.insertContent(mDstFileInfo,
+                            getContentResolver(), mUri);
                 // After trimming is done, trigger the UI changed.
                 mHandler.post(new Runnable() {
                     @Override

@@ -30,6 +30,7 @@ import com.android.gallery3d.data.MediaObject;
 import com.android.gallery3d.data.MediaSet;
 import com.android.gallery3d.data.Path;
 import com.android.gallery3d.glrenderer.TiledTexture;
+import com.android.gallery3d.ui.BitmapScreenNail;
 import com.android.gallery3d.ui.PhotoView;
 import com.android.gallery3d.ui.ScreenNail;
 import com.android.gallery3d.ui.SynchronizedHandler;
@@ -49,6 +50,7 @@ import java.util.HashSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
+import com.android.gallery3d.data.SnailItem;
 
 public class PhotoDataAdapter implements PhotoPage.Model {
     @SuppressWarnings("unused")
@@ -66,6 +68,8 @@ public class PhotoDataAdapter implements PhotoPage.Model {
 
     private static final int BIT_SCREEN_NAIL = 1;
     private static final int BIT_FULL_IMAGE = 2;
+    
+    private AppBridge mAppBridge;
 
     // sImageFetchSeq is the fetching sequence for images.
     // We want to fetch the current screennail first (offset = 0), the next
@@ -163,6 +167,10 @@ public class PhotoDataAdapter implements PhotoPage.Model {
 
     private final SourceListener mSourceListener = new SourceListener();
     private final TiledTexture.Uploader mUploader;
+    
+    public int getSize() {
+        return mSize;
+    }
 
     // The path of the current viewing item will be stored in mItemPath.
     // If mItemPath is not null, mCurrentIndex is only a hint for where we
@@ -171,7 +179,7 @@ public class PhotoDataAdapter implements PhotoPage.Model {
     // preview. If cameraIndex < 0, there is no camera preview.
     public PhotoDataAdapter(AbstractGalleryActivity activity, PhotoView view,
             MediaSet mediaSet, Path itemPath, int indexHint, int cameraIndex,
-            boolean isPanorama, boolean isStaticCamera) {
+            boolean isPanorama, boolean isStaticCamera,AppBridge tmpAppBirdge) {
         mSource = Utils.checkNotNull(mediaSet);
         mPhotoView = Utils.checkNotNull(view);
         mItemPath = Utils.checkNotNull(itemPath);
@@ -181,6 +189,7 @@ public class PhotoDataAdapter implements PhotoPage.Model {
         mIsStaticCamera = isStaticCamera;
         mThreadPool = activity.getThreadPool();
         mNeedFullImage = true;
+        mAppBridge = tmpAppBirdge;
 
         Arrays.fill(mChanges, MediaObject.INVALID_DATA_VERSION);
 
@@ -393,6 +402,10 @@ public class PhotoDataAdapter implements PhotoPage.Model {
     }
 
     private void updateCurrentIndex(int index) {
+        int m = index % DATA_CACHE_SIZE;
+        if(m < 0 || m >= mData.length){
+            return;
+        }
         if (mCurrentIndex == index) return;
         mCurrentIndex = index;
         updateSlidingWindow();
@@ -562,6 +575,10 @@ public class PhotoDataAdapter implements PhotoPage.Model {
     public int getCurrentIndex() {
         return mCurrentIndex;
     }
+    
+    public MediaItem getCurrentMediaItem() {
+        return mData[mCurrentIndex % DATA_CACHE_SIZE];
+    }
 
     @Override
     public MediaItem getMediaItem(int offset) {
@@ -701,6 +718,10 @@ public class PhotoDataAdapter implements PhotoPage.Model {
             // a Bitmap and then wrap it in a BitmapScreenNail instead.
             ScreenNail s = mItem.getScreenNail();
             if (s != null) return s;
+            if(mItem instanceof SnailItem){
+                s  = mAppBridge.attachScreenNail();
+                return s;
+            }
 
             // If this is a temporary item, don't try to get its bitmap because
             // it won't be available. We will get its bitmap after a data reload.
@@ -714,7 +735,7 @@ public class PhotoDataAdapter implements PhotoPage.Model {
                 bitmap = BitmapUtils.rotateBitmap(bitmap,
                     mItem.getRotation() - mItem.getFullImageRotation(), true);
             }
-            return bitmap == null ? null : new TiledScreenNail(bitmap);
+            return bitmap == null ? null : new BitmapScreenNail(bitmap);
         }
     }
 
@@ -1038,8 +1059,14 @@ public class PhotoDataAdapter implements PhotoPage.Model {
                     info.size = mSource.getMediaItemCount();
                 }
                 if (!info.reloadContent) continue;
-                info.items = mSource.getMediaItem(
-                        info.contentStart, info.contentEnd);
+                try {
+                    info.items = mSource.getMediaItem(
+                            info.contentStart, info.contentEnd);
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                    return;
+                }
 
                 int index = MediaSet.INDEX_NOT_FOUND;
 
@@ -1049,16 +1076,21 @@ public class PhotoDataAdapter implements PhotoPage.Model {
                     mFocusHintPath = null;
                 }
 
-                // Otherwise try to see if the currently focused item can be found.
-                if (index == MediaSet.INDEX_NOT_FOUND) {
-                    MediaItem item = findCurrentMediaItem(info);
-                    if (item != null && item.getPath() == info.target) {
-                        index = info.indexHint;
-                    } else {
-                        index = findIndexOfTarget(info);
+                try {
+                    // Otherwise try to see if the currently focused item can be found.
+                    if (index == MediaSet.INDEX_NOT_FOUND) {
+                        MediaItem item = findCurrentMediaItem(info);
+                        if (item != null && item.getPath() == info.target) {
+                            index = info.indexHint;
+                        } else {
+                            index = findIndexOfTarget(info);
+                        }
                     }
                 }
-
+                catch (Exception e){ 
+                    e.printStackTrace();
+                    return;
+                }
                 // The image has been deleted. Focus on the next image (keep
                 // mCurrentIndex unchanged) or the previous image (decrease
                 // mCurrentIndex by 1). In page mode we want to see the next

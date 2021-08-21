@@ -19,8 +19,13 @@ package com.android.gallery3d.gadget;
 import android.annotation.TargetApi;
 import android.appwidget.AppWidgetManager;
 import android.content.Intent;
+import android.database.ContentObserver;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Message;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
 
@@ -77,12 +82,39 @@ public class WidgetService extends RemoteViewsService {
             AppWidgetManager.getInstance(mApp.getAndroidContext())
                     .notifyAppWidgetViewDataChanged(
                     mAppWidgetId, R.id.appwidget_stack_view);
+            mApp.getContentResolver().registerContentObserver(  
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true, mObserver);  
         }
+        
+        private ContentObserver mObserver = new ContentObserver(new Handler()) {          
+            @Override  
+            public void onChange(boolean selfChange) {  
+                mHandler.removeMessages(MSG);
+                mHandler.sendEmptyMessageDelayed(MSG, 3000);
+            }  
+        }; 
+        
+        private final int MSG = 0x01;
+        private Handler mHandler = new Handler(){
+            @Override
+            public void handleMessage(Message msg) {
+                switch (msg.what) {
+                case MSG:
+                    mSource.reload();
+                    AppWidgetManager.getInstance(mApp.getAndroidContext())
+                    .notifyAppWidgetViewDataChanged(
+                    mAppWidgetId, R.id.appwidget_stack_view);
+                    break;
+                }
+            }
+            
+        };
 
         @Override
         public void onDestroy() {
             mSource.close();
             mSource = null;
+            mApp.getContentResolver().unregisterContentObserver(mObserver);
         }
 
         @Override
