@@ -53,7 +53,7 @@
         <activity android:name="com.android.gallery3d.app.MovieActivity"
                 android:label="@string/movie_view_label"
                 android:exported="true"
-                android:configChanges="orientation|keyboardHidden|screenSize">
+                android:configChanges="orientation|keyboardHidden|screenSize|screenLayout">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -92,7 +92,7 @@
 
         <activity android:name="com.android.gallery3d.app.GalleryActivity" android:label="@string/app_name"
                 android:exported="true"
-                android:configChanges="keyboardHidden|orientation|screenSize">
+                android:configChanges="keyboardHidden|orientation|screenSize|screenLayout">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -175,7 +175,7 @@
         <!-- Note: The alias must put after the target activity -->
         <activity-alias android:name="com.cooliris.media.Gallery"
                 android:targetActivity="com.android.gallery3d.app.GalleryActivity"
-                android:configChanges="keyboardHidden|orientation|screenSize"
+                android:configChanges="keyboardHidden|orientation|screenSize|screenLayout"
                 android:exported="true"
                 android:label="@string/app_name">
             <intent-filter>
@@ -246,7 +246,7 @@
 
         <activity
             android:name=".app.CheckPermissionActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout"
             android:label="@string/app_name"
             android:theme="@style/Theme.Gallery" />
 
