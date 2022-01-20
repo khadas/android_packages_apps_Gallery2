@@ -290,6 +290,7 @@ public class GLES20Canvas implements GLCanvas {
                 mOesTextureParameters);
         mMeshProgram = assembleProgram(meshVertexShader, textureFragmentShader, mMeshParameters);
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 2);
         checkError();
     }
 
