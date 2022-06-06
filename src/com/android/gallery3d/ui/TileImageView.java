@@ -724,17 +724,22 @@ public class TileImageView extends GLView {
             if (rotation != 0)
                 canvas.restore();
         } else if(isBMPPic){
-            if(mBitmapScreenNail != null && mDecodeUri != null && mDecodeUri == mUri){
-                mBitmapScreenNail.draw(canvas, mOffsetX, mOffsetY,
-                        Math.round(mImageWidth * mScale),
-                        Math.round(mImageHeight * mScale));
-            } else if (mScreenNail != null) {
-                mScreenNail.draw(canvas, mOffsetX, mOffsetY,
-                        Math.round(mImageWidth * mScale),
-                        Math.round(mImageHeight * mScale));
-                if (isScreenNailAnimating()) {
-                    invalidate();
+            try {
+                if (mBitmapScreenNail != null && mDecodeUri != null && mDecodeUri == mUri) {
+                    mBitmapScreenNail.draw(canvas, mOffsetX, mOffsetY,
+                            Math.round(mImageWidth * mScale),
+                            Math.round(mImageHeight * mScale));
+                } else if (mScreenNail != null) {
+                    mScreenNail.draw(canvas, mOffsetX, mOffsetY,
+                            Math.round(mImageWidth * mScale),
+                            Math.round(mImageHeight * mScale));
+                    if (isScreenNailAnimating()) {
+                        invalidate();
+                    }
                 }
+            }finally {
+                if (flags != 0)
+                    canvas.restore();
             }
         }else{
             try {
