@@ -187,7 +187,6 @@ public class MenuExecutor {
         boolean supportTrim = (supported & MediaObject.SUPPORT_TRIM) != 0;
         boolean supportMute = (supported & MediaObject.SUPPORT_MUTE) != 0;
         boolean supportShare = (supported & MediaObject.SUPPORT_SHARE) != 0;
-        boolean supportSetAs = (supported & MediaObject.SUPPORT_SETAS) != 0;
         boolean supportShowOnMap = (supported & MediaObject.SUPPORT_SHOW_ON_MAP) != 0;
         boolean supportCache = (supported & MediaObject.SUPPORT_CACHE) != 0;
         boolean supportEdit = (supported & MediaObject.SUPPORT_EDIT) != 0;
@@ -204,7 +203,6 @@ public class MenuExecutor {
         // Hide panorama until call to updateMenuForPanorama corrects it
         setMenuItemVisible(menu, R.id.action_share_panorama, false);
         setMenuItemVisible(menu, R.id.action_share, supportShare);
-        setMenuItemVisible(menu, R.id.action_setas, supportSetAs);
         setMenuItemVisible(menu, R.id.action_show_on_map, supportShowOnMap);
         setMenuItemVisible(menu, R.id.action_edit, supportEdit);
         // setMenuItemVisible(menu, R.id.action_simple_edit, supportEdit);
@@ -263,21 +261,6 @@ public class MenuExecutor {
                 Intent intent = getIntentBySingleSelectedPath(Intent.ACTION_EDIT)
                         .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 ((Activity) mActivity).startActivity(Intent.createChooser(intent, null));
-                return;
-            }
-            case R.id.action_setas: {
-                Intent intent = getIntentBySingleSelectedPath(Intent.ACTION_ATTACH_DATA)
-                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                intent.putExtra("mimeType", intent.getType());
-                Activity activity = mActivity;
-                Uri uri = intent.getData();
-                if (null != uri && "file".equals(uri.getScheme())) {
-                    uri = FileUtils.adjustFileUri(mActivity.getAndroidContext(), uri);
-                    intent.setDataAndType(uri, intent.getType());
-                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                }
-                activity.startActivity(Intent.createChooser(
-                        intent, activity.getString(R.string.set_as)));
                 return;
             }
             case R.id.action_delete:

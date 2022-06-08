@@ -1211,7 +1211,6 @@ public abstract class PhotoPage extends ActivityState implements
                 }
                 confirmMsg = mActivity.getResources().getQuantityString(
                         R.plurals.delete_selection, 1);
-            case R.id.action_setas:
             case R.id.action_rotate_ccw:
             case R.id.action_rotate_cw:
             case R.id.action_show_on_map:
