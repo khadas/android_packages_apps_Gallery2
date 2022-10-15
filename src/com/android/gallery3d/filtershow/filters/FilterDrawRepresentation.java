@@ -271,6 +271,9 @@ public class FilterDrawRepresentation extends FilterRepresentation {
     public void fillStrokeParameters(StrokeData sd){
         byte type = (byte) mParamStyle.getSelected();
         int color = computeCurrentColor();
+        if (color == 0) {
+            color = DEFAULT_MENU_COLOR1;
+        }
         float size = mParamSize.getValue();
         sd.mColor = color;
         sd.mRadius = size;

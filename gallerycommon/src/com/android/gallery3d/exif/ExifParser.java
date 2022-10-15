@@ -558,9 +558,13 @@ class ExifParser {
             // Read the data here.
             if ((offset < mIfd0Position) && (dataFormat == ExifTag.TYPE_UNDEFINED)) {
                 byte[] buf = new byte[(int) numOfComp];
-                System.arraycopy(mDataAboveIfd0, (int) offset - DEFAULT_IFD0_OFFSET,
-                        buf, 0, (int) numOfComp);
-                tag.setValue(buf);
+                try {
+                    System.arraycopy(mDataAboveIfd0, (int) offset - DEFAULT_IFD0_OFFSET,
+                            buf, 0, (int) numOfComp);
+                    tag.setValue(buf);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             } else {
                 tag.setOffset((int) offset);
             }

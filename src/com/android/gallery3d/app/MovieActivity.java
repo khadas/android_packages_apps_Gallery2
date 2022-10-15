@@ -77,6 +77,10 @@ public class MovieActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (CheckPermissionActivity.jump2PermissionActivity(this, getIntent())) {
+            finish();
+            return;
+        }
 
         requestWindowFeature(Window.FEATURE_ACTION_BAR);
         requestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
@@ -238,37 +242,51 @@ public class MovieActivity extends Activity {
 
     @Override
     public void onPause() {
-        mPlayer.onPause();
+        if (null != mPlayer) {
+            mPlayer.onPause();
+        }
         super.onPause();
     }
 
     @Override
     public void onResume() {
-        mPlayer.onResume();
+        if (null != mPlayer) {
+            mPlayer.onResume();
+        }
         super.onResume();
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        mPlayer.onSaveInstanceState(outState);
+        if (null != mPlayer) {
+            mPlayer.onSaveInstanceState(outState);
+        }
     }
 
     @Override
     public void onDestroy() {
-        mPlayer.onDestroy();
+        if (null != mPlayer) {
+            mPlayer.onDestroy();
+        }
         super.onDestroy();
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        return mPlayer.onKeyDown(keyCode, event)
-                || super.onKeyDown(keyCode, event);
+        boolean playKey = false;
+        if (null != mPlayer) {
+            playKey = mPlayer.onKeyDown(keyCode, event);
+        }
+        return playKey || super.onKeyDown(keyCode, event);
     }
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        return mPlayer.onKeyUp(keyCode, event)
-                || super.onKeyUp(keyCode, event);
+        boolean playKey = false;
+        if (null != mPlayer) {
+            playKey = mPlayer.onKeyUp(keyCode, event);
+        }
+        return playKey || super.onKeyUp(keyCode, event);
     }
 }

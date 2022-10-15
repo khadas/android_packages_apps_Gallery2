@@ -831,6 +831,6 @@ public class PrimaryImage implements RenderingRequestCaller {
     }
 
     public boolean hasTinyPlanet() {
-        return mPreset.contains(FilterRepresentation.TYPE_TINYPLANET);
+        return mPreset != null && mPreset.contains(FilterRepresentation.TYPE_TINYPLANET);
     }
 }

@@ -16,11 +16,13 @@
 
 package com.android.gallery3d.app;
 
+import android.app.ActivityManager;
 import android.app.Dialog;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.InputDevice;
@@ -39,6 +41,16 @@ import com.android.gallery3d.data.Path;
 import com.android.gallery3d.picasasource.PicasaSource;
 import com.android.gallery3d.util.GalleryUtils;
 
+// $_rbox_$_modify_$_chengmingchuan_$20140225
+// $_rbox_$_modify_$_begin
+import android.view.KeyEvent;
+import android.os.Environment;
+import com.android.gallery3d.ui.GLRootView;
+import com.android.gallery3d.ui.GLRoot;
+import android.content.Context;
+// $_rbox_$_modify_$_end
+
+
 public final class GalleryActivity extends AbstractGalleryActivity implements OnCancelListener {
     public static final String EXTRA_SLIDESHOW = "slideshow";
     public static final String EXTRA_DREAM = "dream";
@@ -53,6 +65,7 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
 
     private static final String TAG = "GalleryActivity";
     private Dialog mVersionCheckDialog;
+    private boolean mUnInit;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +83,13 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
         if (savedInstanceState != null) {
             getStateManager().restoreFromState(savedInstanceState);
         } else {
-            initializeByIntent();
+            if (CheckPermissionActivity.hasUnauthorizedPermission(this)) {
+                requestPermissions(CheckPermissionActivity.REQUEST_PERMISSIONS,
+                        CheckPermissionActivity.REQUEST_CODE_ASK_PERMISSIONS);
+                mUnInit = true;
+            } else {
+                initializeByIntent();
+            }
         }
     }
 
@@ -173,7 +192,7 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
                 int typeBits = GalleryUtils.determineTypeBits(this, intent);
                 data.putInt(KEY_TYPE_BITS, typeBits);
                 data.putString(AlbumSetPage.KEY_MEDIA_PATH,
-                        getDataManager().getTopSetPath(typeBits));
+                        getDataManager().getTopSetPath(DataManager.INCLUDE_ALL));
                 getStateManager().startState(AlbumSetPage.class, data);
             } else if (contentType.startsWith(
                     ContentResolver.CURSOR_DIR_BASE_TYPE)) {
@@ -202,7 +221,12 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
                     startDefaultPage();
                 }
             } else {
-                Path itemPath = dm.findPathByUri(uri, contentType);
+//                Path itemPath = dm.findPathByUri(uri, contentType);
+                String type = contentType;
+                if(type.trim().equals("*/*")){
+                    type = "image/*";
+                }
+                Path itemPath = dm.findPathByUri(uri, type);
                 Path albumPath = dm.getDefaultSetOf(itemPath);
 
                 data.putString(PhotoPage.KEY_MEDIA_ITEM_PATH, itemPath.toString());
@@ -230,7 +254,23 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
 
     @Override
     protected void onResume() {
-        Utils.assertTrue(getStateManager().getStateCount() > 0);
+        if (mUnInit) {
+            super.onResume();
+            return;
+        }
+        try {
+            Utils.assertTrue(getStateManager().getStateCount() > 0);
+        } catch (AssertionError e) {
+            if (ActivityManager.isUserAMonkey()) {
+                super.onResume();
+                mVersionCheckDialog = null;
+                Log.v(TAG, "jump AssertionError during monkey with onResume");
+                finish();
+                return;
+            } else {
+                throw new AssertionError();
+            }
+        }
         super.onResume();
         if (mVersionCheckDialog != null) {
             mVersionCheckDialog.show();
@@ -252,6 +292,40 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
         }
     }
 
+
+    // $_rbox_$_modify_$_chengmingchuan_$_20140225_$_[Info: Handle Keycode]
+    // $_rbox_$_modify_$_begin
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+         if(KeyEvent.KEYCODE_BACK==keyCode){
+         this.onBackPressed();
+         return true;
+     }
+
+     GLRoot root = getGLRoot();
+        root.lockRenderThread();
+        try {
+         boolean flag = getStateManager().onKeyDown(keyCode, event);
+         if(flag){
+          ((GLRootView)root).setFocusable(true);
+          ((GLRootView)root).requestFocus();
+         }else{
+             ((GLRootView)root).setFocusable(false);
+         }
+            return flag||super.onKeyDown(keyCode, event);
+        } catch (AssertionError e){
+            if (ActivityManager.isUserAMonkey()) {
+                Log.v(TAG, "jump AssertionError during monkey with onKeyDown");
+            } else {
+                throw new AssertionError();
+            }
+            return super.onKeyDown(keyCode, event);
+        } finally {
+            root.unlockRenderThread();
+       }
+    }
+    // $_rbox_$_modify_$_end
+
     @Override
     public boolean onGenericMotionEvent(MotionEvent event) {
         final boolean isTouchPad = (event.getSource()
@@ -271,5 +345,31 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
             return dispatchTouchEvent(touchEvent);
         }
         return super.onGenericMotionEvent(event);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case CheckPermissionActivity.REQUEST_CODE_ASK_PERMISSIONS:
+                for (int result : grantResults) {
+                    if (result != PackageManager.PERMISSION_GRANTED) {
+                        // Permission Denied
+                        String toast_text = getResources().getString(R.string.err_permission);
+                            Toast.makeText(this, toast_text, Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
+                }
+                // Permission Granted
+                mUnInit = false;
+                initializeByIntent();
+                Utils.assertTrue(getStateManager().getStateCount() > 0);
+                if (mVersionCheckDialog != null) {
+                    mVersionCheckDialog.show();
+                }
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
     }
 }

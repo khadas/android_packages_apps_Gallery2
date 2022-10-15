@@ -32,6 +32,7 @@ import android.widget.Toast;
 
 import com.android.gallery3d.R;
 import com.android.gallery3d.common.Utils;
+import com.android.gallery3d.data.DataManager;
 import com.android.gallery3d.exif.ExifInterface;
 import com.android.gallery3d.filtershow.FilterShowActivity;
 import com.android.gallery3d.filtershow.cache.ImageLoader;
@@ -268,7 +269,8 @@ public class SaveImage {
         boolean ret = false;
         OutputStream s = null;
         try {
-            s = exif.getExifWriterStream(file.getAbsolutePath());
+            s = exif.getExifWriterStream(
+                    DataManager.convertStorageToMntCanWrite(file.getAbsolutePath()));
             image.compress(Bitmap.CompressFormat.JPEG,
                     (jpegCompressQuality > 0) ? jpegCompressQuality : 1, s);
             s.flush();
@@ -326,7 +328,8 @@ public class SaveImage {
     }
 
     public Uri processAndSaveImage(ImagePreset preset, boolean flatten,
-                                   int quality, float sizeFactor, boolean exit) {
+                                   int quality, float sizeFactor,
+                                   boolean exit, boolean notMoveSource) {
 
         Uri uri = null;
         if (exit) {
@@ -346,7 +349,7 @@ public class SaveImage {
         // newSourceUri is then pointing to the new location.
         // If no file is moved, newSourceUri will be the same as mSourceUri.
         Uri newSourceUri = mSourceUri;
-        if (!flatten) {
+        if (!flatten && !notMoveSource) {
             newSourceUri = moveSrcToAuxIfNeeded(mSourceUri, mDestinationFile);
         }
 
@@ -533,7 +536,7 @@ public class SaveImage {
     }
 
     public static void saveImage(ImagePreset preset, final FilterShowActivity filterShowActivity,
-            File destination) {
+            File destination, boolean notMoveSource) {
         Uri selectedImageUri = filterShowActivity.getSelectedImageUri();
         Uri sourceImageUri = PrimaryImage.getImage().getUri();
         boolean flatten = false;
@@ -541,7 +544,7 @@ public class SaveImage {
             flatten = true;
         }
         Intent processIntent = ProcessingService.getSaveIntent(filterShowActivity, preset,
-                destination, selectedImageUri, sourceImageUri, flatten, 90, 1f, true);
+                destination, selectedImageUri, sourceImageUri, flatten, 90, 1f, true, notMoveSource);
 
         filterShowActivity.startService(processIntent);
 

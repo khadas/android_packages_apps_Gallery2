@@ -436,4 +436,8 @@
     <item quantity="one" msgid="6949174783125614798">"%1$d张照片"</item>
     <item quantity="other" msgid="3813306834113858135">"%1$d张照片"</item>
   </plurals>
+
+    <string name="movie_crop_alert">"无法剪辑：只有MP4格式视频才能剪辑"</string>
+
+    <string name="err_permission">"无权限"</string>
 </resources>

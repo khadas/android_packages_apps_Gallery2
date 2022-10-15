@@ -19,6 +19,7 @@ package com.android.gallery3d.ui;
 import android.graphics.Rect;
 import android.os.SystemClock;
 import android.view.MotionEvent;
+import android.view.View;
 
 import com.android.gallery3d.anim.CanvasAnimation;
 import com.android.gallery3d.anim.StateTransitionAnimation;
@@ -290,6 +291,21 @@ public class GLView {
 
     protected boolean onTouch(MotionEvent event) {
         return false;
+    }
+
+    protected boolean onGenericMotion(View v, MotionEvent event){
+        return false;
+    }
+
+    protected boolean dispatchGenericMotion(View v, MotionEvent event) {
+        for (int i = getComponentCount() - 1; i >= 0; --i) {
+            GLView component = getComponent(i);
+            if (component.getVisibility() != GLView.VISIBLE) continue;
+            if (component.onGenericMotion(v, event)) {
+                return true;
+            }
+        }
+        return onGenericMotion(v,event);
     }
 
     protected boolean dispatchTouchEvent(MotionEvent event,
